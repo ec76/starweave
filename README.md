@@ -259,6 +259,15 @@ the failed pool so a later call can retry. The holder survives development modul
 reloads. No SQL queries, schema migrations, tables, or additional database grants
 are added to request handlers.
 
+### Editorial schema and manual migrations
+
+Version-controlled editorial tables, revision/publication types, manual migration
+commands and the opt-in disposable SQL verification procedure are documented in
+[the Called Together database guide](apps/called-together/database/README.md).
+Migrations require an authorized developer identity and explicit `--apply`;
+ordinary builds, startup and deployments never apply schema changes. The runtime
+managed identity receives no schema-administration permissions.
+
 ### Local operator verification
 
 Use Node.js 24 and npm 11.19.1. Copy `apps/called-together/.env.example` to
