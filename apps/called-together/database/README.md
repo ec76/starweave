@@ -1,7 +1,9 @@
 ﻿# Called Together editorial database
 
-These files define schema and domain types only. There are no public APIs,
-login flows, role assignments, real accounts, or content seeds. Application builds,
+These files define the editorial schema, domain types and migration tools.
+[Anonymous published-article read APIs](published-articles.md) use the public view.
+There are no write APIs, login flows, role assignments, real accounts, or content
+seeds. Application builds,
 startup and deployment never run migrations. The operator requires a source
 checkout; migration entry points and SQL files are not added to the App Service
 runtime package. Existing private `verify:sql` packaging is unchanged.
@@ -248,9 +250,21 @@ intended lowercase author-slug constraint. Fixture generation now uses
 uppercase-slug rejection assertion were added. Applied migrations 0001 and 0002
 were unchanged by this correction.
 
-Public APIs and user authentication are not implemented here. Approval permissions,
-self-approval prevention, approved-revision immutability and transactional service
+The schema verification above did not verify API access or user authentication.
+The read-only API implementation is documented separately; user authentication
+and write endpoints remain future work. Approval permissions, self-approval
+prevention, approved-revision immutability and transactional service
 workflows remain future work. API database access and managed-identity SELECT
 permissions have **not** been verified by this record. No new runtime grants,
 Azure role changes, sample-content seeds or automatic deployment migrations are
 part of this change.
+
+## Published-article read access
+
+The project owner reports manually granting SELECT on `dbo.PublicArticles` to
+`[called-together-dev-ec76]` in `sqldb-called-together-dev`. This records the
+owner-performed grant, not a permission change by the coding agent. Effective
+access from the deployed application using its managed identity remains
+**unverified**, including successful live API reads. Follow the
+[local, deployment and live verification steps](published-articles.md). An empty
+development database should return HTTP 200 with an empty list, not an error.
