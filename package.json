@@ -18,7 +18,9 @@
     "dev:called-together": "turbo run dev --filter=called-together",
     "build:called-together": "turbo run build --filter=called-together...",
     "package:called-together": "npm run build:called-together && node scripts/package-called-together.mjs",
-    "verify:called-together": "node scripts/verify-called-together.mjs"
+    "verify:called-together": "node scripts/verify-called-together.mjs",
+    "db:status:called-together": "npm run db:status --workspace=called-together --",
+    "db:migrate:called-together": "npm run db:migrate --workspace=called-together --"
   },
   "devDependencies": {
     "@storybook/react-vite": "^10.6.5",

@@ -7,5 +7,10 @@
     "declaration": false,
     "declarationMap": false
   },
-  "include": ["server/database.ts", "operators/verify-sql.ts"]
+  "include": [
+    "server/database.ts",
+    "operators/verify-sql.ts",
+    "operators/migrate.ts",
+    "operators/prepare-editorial-verification.ts"
+  ]
 }

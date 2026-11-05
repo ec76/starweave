@@ -10,7 +10,10 @@
     "check-types": "next typegen && tsc --noEmit",
     "build:sql": "tsc -p tsconfig.sql.json",
     "verify:sql": "npm run build:sql && node --conditions=react-server --env-file-if-exists=.env.local build/sql/operators/verify-sql.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:status": "npm run build:sql && node --conditions=react-server --env-file-if-exists=.env.local build/sql/operators/migrate.js --status",
+    "db:migrate": "npm run build:sql && node --conditions=react-server --env-file-if-exists=.env.local build/sql/operators/migrate.js",
+    "db:prepare-verification": "npm run build:sql && node build/sql/operators/prepare-editorial-verification.js"
   },
   "dependencies": {
     "@azure/identity": "^4.14.0",
