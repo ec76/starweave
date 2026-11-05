@@ -1,3 +1,4 @@
+import { ResourceCard } from "@repo/ui";
 import { Box, Button, Container, Stack, Typography } from "@mui/material";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ThemeProvider } from "./theme-provider";
@@ -103,5 +104,51 @@ export const Homepage: Story = {
     <SiteLayout>
       <Home />
     </SiteLayout>
+  ),
+};
+
+export const ResourceCards: Story = {
+  render: () => (
+    <Container sx={{ py: tokens.layout.section }}>
+      <Typography variant="h1" sx={{ mb: 3 }}>
+        Fictional resource previews
+      </Typography>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: {
+            xs: "minmax(0, 1fr)",
+            sm: "repeat(2, minmax(0, 1fr))",
+            md: "repeat(3, minmax(0, 1fr))",
+          },
+          gap: tokens.layout.grid,
+        }}
+      >
+        <ResourceCard
+          title="A fictional conversation notebook"
+          href="#preview-destination"
+          description="Sample content for reviewing the approved card appearance."
+          resourceType="Article"
+          author="Example author (fictional)"
+          language="English"
+          supportingText="8 min read"
+        />
+        <ResourceCard
+          title="Una guía imaginaria para compartir ideas y experiencias en comunidad"
+          href="#preview-destination"
+          description="Contenido ficticio para revisar títulos extensos y descripciones en español."
+          language="Español"
+          resourceType="PDF"
+          supportingText="PDF · 1.2 MB"
+        />
+        <ResourceCard
+          title="A simple fictional preview"
+          href="#preview-destination"
+        />
+      </Box>
+      <Typography id="preview-destination" sx={{ mt: 4 }}>
+        Preview destination only; these are fictional examples.
+      </Typography>
+    </Container>
   ),
 };

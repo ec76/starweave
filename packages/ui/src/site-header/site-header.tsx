@@ -80,7 +80,7 @@ export function SiteHeader({
             minHeight: { xs: 48, md: 64 },
             gridTemplateColumns: {
               xs: "minmax(0, 1fr) auto",
-              md: "minmax(0, 1fr) auto auto",
+              md: "minmax(0, 1fr) minmax(0, 2fr)",
             },
             alignItems: "center",
             gap: 2,
@@ -136,8 +136,8 @@ export function SiteHeader({
             <Box
               sx={{
                 display: "flex",
-                gridColumn: { xs: "1 / -1", md: "2" },
-                gridRow: { xs: 2, md: 1 },
+                gridColumn: "1 / -1",
+                gridRow: 2,
                 flexWrap: "wrap",
                 gap: 1,
                 minWidth: 0,
@@ -154,7 +154,7 @@ export function SiteHeader({
             </Box>
           )}
           {links.length > 0 && (
-            <Box sx={{ gridColumn: "-2 / -1", gridRow: 1, display: "flex" }}>
+            <Box sx={{ gridColumn: "-2 / -1", gridRow: 1, minWidth: 0 }}>
               <HeaderNavigation
                 navigationLabel={navigationLabel}
                 menuLabels={menuLabels}

@@ -167,6 +167,5 @@ export const Tablet: Story = {
 };
 export const Desktop: Story = {
   args: SpanishContent.args,
-  ...responsive(1280, 900, "desktop"),
-  play: openSpanishMenu,
+  ...responsive(1440, 900, "desktop"),
 };

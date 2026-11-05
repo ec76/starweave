@@ -4,6 +4,7 @@
   "private": true,
   "exports": {
     ".": "./src/index.ts",
+    "./resource-card": "./src/resource-card/index.ts",
     "./content-card": "./src/content-card/index.ts",
     "./site-header": "./src/site-header/index.ts",
     "./site-footer": "./src/site-footer/index.ts",

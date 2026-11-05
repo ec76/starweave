@@ -60,7 +60,7 @@ describe("SiteHeader", () => {
       "Overview",
     );
   });
-  it("renders branding, logo and actions with an icon-only trigger", () => {
+  it("renders desktop links directly without duplicate menu controls", () => {
     viewport(false);
     renderWithProviders(
       <SiteHeader
@@ -77,11 +77,51 @@ describe("SiteHeader", () => {
     );
     expect(screen.getByText("Visual mark")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Search" })).toBeVisible();
-    const trigger = screen.getByRole("button", { name: "Open navigation" });
-    expect(trigger).toHaveTextContent(/^$/);
-    expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
-    expect(trigger).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Open navigation" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole("navigation")).toHaveLength(1);
+    expect(screen.getAllByRole("link", { name: "Overview" })).toHaveLength(1);
+    expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+  it("tabs through desktop links without a hidden menu stop", async () => {
+    viewport(false);
+    const user = userEvent.setup();
+    renderWithProviders(
+      <SiteHeader brand="Studio" brandHref="/" links={links} />,
+    );
+    await user.tab();
+    expect(screen.getByRole("link", { name: "Studio" })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("link", { name: "Overview" })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("link", { name: "Updates" })).toHaveFocus();
+    expect(
+      screen.queryByRole("dialog", { hidden: true }),
+    ).not.toBeInTheDocument();
+  });
+  it("keeps closed mobile links out of keyboard navigation", async () => {
+    viewport(true);
+    const user = userEvent.setup();
+    renderWithProviders(
+      <>
+        <SiteHeader brand="Studio" brandHref="/" links={links} />
+        <button>After header</button>
+      </>,
+    );
+    await user.tab();
+    await user.tab();
+    expect(
+      screen.getByRole("button", { name: "Open navigation" }),
+    ).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("button", { name: "After header" })).toHaveFocus();
+    expect(
+      screen.queryByRole("link", { name: "Overview" }),
+    ).not.toBeInTheDocument();
   });
   it("omits menu controls without links", () => {
     viewport(true);
@@ -89,7 +129,7 @@ describe("SiteHeader", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
   });
-  for (const mobile of [true, false]) {
+  for (const mobile of [true]) {
     it(`opens the ${mobile ? "mobile drawer" : "desktop dropdown"}, traps focus and restores it on Escape`, async () => {
       viewport(mobile);
       const user = userEvent.setup();
