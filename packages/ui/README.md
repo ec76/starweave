@@ -37,14 +37,11 @@ is a slot for application-provided controls. `navigationLabel` defaults to
 `menuLabels` optionally supplies `{ open, close }` accessible names for the icon
 buttons, including localized names.
 
-The three-line icon button opens navigation at every width, with a localized
-accessible name, aria-expanded, and aria-controls. Below the theme's md
-breakpoint it opens a modal drawer sliding in from the right; larger screens use
-an anchored dropdown. Enter/Space opens it, Tab stays within the open panel, and
-Escape, the close icon, outside click, or link activation closes it and restores
-focus to the trigger. Links use normal browser keyboard behavior. Switching
-screen layouts resets its state. Without links, navigation and its trigger are
-omitted. The header itself stays in normal page flow.
+From the theme's md breakpoint, navigation links appear directly and wrap.
+Below md, a three-line icon button opens a modal drawer. Enter/Space opens it,
+Tab stays within the panel, and Escape, close, outside click or link activation
+closes it and restores focus. Only the current presentation is rendered, so
+hidden navigation does not add keyboard stops. Without links, controls are omitted.
 
 The footer accepts optional `brand` text or custom React content, `description`,
 `linkGroups` (`heading` and `links`), `copyright`, and `additionalContent`. Each
@@ -107,3 +104,35 @@ Responsive stories cover mobile, tablet, and desktop layouts with longer Spanish
 labels. Check them at normal and 200% text sizing, including keyboard focus,
 panel scrolling, and 44px touch targets. Consumer themes and supplied slots need
 their own accessibility checks.
+
+## ResourceCard
+
+Import from `@repo/ui` or `@repo/ui/resource-card`:
+
+```tsx
+<ResourceCard
+  title="Sample resource"
+  href="/resources/sample"
+  headingLevel={3}
+  resourceType="Article"
+  description="A supplied description."
+  author="Supplied author display text"
+  language="English"
+  supportingText="8 min read"
+/>
+```
+
+Only title and href are required. Optional image accepts { src, alt }; provide
+meaningful alternative text or an empty alt for a decorative image. Images use
+16:9 cropping; select an appropriate source. The default heading is h2; choose
+h2–h6 for the page hierarchy. LinkComponent follows the same single-anchor
+contract as SiteHeader, including direct Next.js Link support. Links navigate
+in the current tab, including external URLs, matching the existing convention.
+
+The card displays supplied text without fetching data, checking permissions or
+publication status, calculating reading time, formatting sizes, choosing routes,
+or emitting page metadata/JSON-LD. Those responsibilities belong to the app.
+There is one title link; images and metadata are not separate interactive targets.
+Cards inherit the consumer theme, wrap text without truncation, and have natural
+height. A containing grid can stretch cards to align rows. Fictional Storybook
+examples demonstrate the component; the live homepage retains its topic cards.

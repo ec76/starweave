@@ -4,13 +4,11 @@ import {
   Box,
   Drawer,
   IconButton,
-  Popover,
   SvgIcon,
   useMediaQuery,
   useTheme,
-  type PopoverActions,
 } from "@mui/material";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 
 interface HeaderNavigationProps {
   children: ReactNode;
@@ -22,27 +20,10 @@ function NavigationContent({
   children,
   navigationLabel,
   menuLabels,
-  mobile,
-}: HeaderNavigationProps & { mobile: boolean }) {
+}: HeaderNavigationProps) {
   const [open, setOpen] = useState(false);
   const id = useId();
   const toggle = useRef<HTMLButtonElement>(null);
-  const paper = useRef<HTMLDivElement>(null);
-  const position = useRef<PopoverActions>(null);
-  useEffect(() => {
-    if (
-      mobile ||
-      !open ||
-      !paper.current ||
-      typeof ResizeObserver === "undefined"
-    )
-      return;
-    const observer = new ResizeObserver(() =>
-      position.current?.updatePosition(),
-    );
-    observer.observe(paper.current);
-    return () => observer.disconnect();
-  }, [mobile, open]);
   const close = () => setOpen(false);
   const content = (
     <Box
@@ -118,66 +99,41 @@ function NavigationContent({
           />
         </SvgIcon>
       </IconButton>
-      {mobile ? (
-        <Drawer
-          anchor="right"
-          open={open}
-          onClose={close}
-          ModalProps={{ keepMounted: true, disablePortal: true }}
-          slotProps={{
-            paper: {
-              role: "dialog",
-              "aria-modal": true,
-              "aria-label": navigationLabel,
-              sx: {
-                width: "min(22rem, 100vw)",
-                maxWidth: "100%",
-                overflowY: "auto",
-              },
+      <Drawer
+        anchor="right"
+        open={open}
+        onClose={close}
+        ModalProps={{ keepMounted: true, disablePortal: true }}
+        slotProps={{
+          paper: {
+            role: "dialog",
+            "aria-modal": true,
+            "aria-label": navigationLabel,
+            sx: {
+              width: "min(22rem, 100vw)",
+              maxWidth: "100%",
+              overflowY: "auto",
             },
-          }}
-        >
-          {content}
-        </Drawer>
-      ) : (
-        <Popover
-          action={position}
-          open={open}
-          anchorEl={toggle.current}
-          onClose={close}
-          keepMounted
-          disablePortal
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-          transformOrigin={{ vertical: "top", horizontal: "right" }}
-          slotProps={{
-            paper: {
-              ref: paper,
-              role: "dialog",
-              "aria-modal": true,
-              "aria-label": navigationLabel,
-              sx: {
-                width: "22rem",
-                maxWidth: "calc(100vw - 32px)",
-                maxHeight: "calc(100dvh - 32px)",
-                overflowY: "auto",
-              },
-            },
-          }}
-        >
-          {content}
-        </Popover>
-      )}
+          },
+        }}
+      >
+        {content}
+      </Drawer>
     </>
   );
 }
 
 export function HeaderNavigation(props: HeaderNavigationProps) {
   const desktop = useMediaQuery(useTheme().breakpoints.up("md"));
-  return (
-    <NavigationContent
-      key={desktop ? "desktop" : "mobile"}
-      {...props}
-      mobile={!desktop}
-    />
-  );
+  if (desktop)
+    return (
+      <Box
+        component="nav"
+        aria-label={props.navigationLabel}
+        sx={{ minWidth: 0 }}
+      >
+        {props.children}
+      </Box>
+    );
+  return <NavigationContent {...props} />;
 }

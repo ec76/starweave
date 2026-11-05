@@ -5,6 +5,7 @@ const config: StorybookConfig = {
     "../../../packages/ui/src/**/*.stories.@(js|jsx|mjs|ts|tsx)",
     "../../called-together/**/*.stories.tsx",
   ],
+  staticDirs: ["../public"],
   addons: ["@storybook/addon-docs"],
   // Next.js preserves JSX for its compiler; Vite must compile app-owned stories.
   viteFinal: (config) => ({
