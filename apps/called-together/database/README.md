@@ -263,8 +263,10 @@ part of this change.
 
 The project owner reports manually granting SELECT on `dbo.PublicArticles` to
 `[called-together-dev-ec76]` in `sqldb-called-together-dev`. This records the
-owner-performed grant, not a permission change by the coding agent. Effective
-access from the deployed application using its managed identity remains
-**unverified**, including successful live API reads. Follow the
+owner-performed grant, not a permission change by the coding agent. The
+owner-reported November 5, 2026 application-container SELECT and deployed
+empty-list API verification is now recorded in the article guide. The coding agent
+did not execute those checks; populated detail and the new HTML pages remain
+unverified live. Follow the
 [local, deployment and live verification steps](published-articles.md). An empty
 development database should return HTTP 200 with an empty list, not an error.

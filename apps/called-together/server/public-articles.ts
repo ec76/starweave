@@ -12,6 +12,7 @@ import {
   publicSummaryColumns,
 } from "./public-article-query";
 
+export const maxArticlePage = 10000;
 export class ArticleInputError extends Error {}
 export interface ArticlePagination {
   readonly page: number;
@@ -35,7 +36,7 @@ export function articlePagination(params: URLSearchParams): ArticlePagination {
     return Number(text);
   }
   return {
-    page: integer("page", 1, 10000),
+    page: integer("page", 1, maxArticlePage),
     pageSize: integer("pageSize", 20, 50),
   };
 }
