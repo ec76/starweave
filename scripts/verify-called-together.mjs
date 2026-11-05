@@ -184,6 +184,30 @@ try {
     200,
     "SQL failures must not affect health",
   );
+  for (const route of ["/articles", "/articles/fictional-missing"]) {
+    const response = await request(route);
+    assert.equal(
+      response.status,
+      200,
+      "Unavailable pages must render a distinct accessible state",
+    );
+    assert.match(response.headers.get("cache-control"), /no-store/);
+    const html = await response.text();
+    assert(html.includes("Articles are temporarily unavailable."));
+    assert(!html.includes("Articles are coming soon."));
+    assert(
+      !html.includes('rel="canonical"'),
+      "No canonical should be invented without SITE_ORIGIN",
+    );
+  }
+  for (const route of ["/articles?page=0", "/articles/INVALID"]) {
+    const response = await request(route);
+    assert.equal(
+      response.status,
+      404,
+      "Invalid article page URLs must return a real 404",
+    );
+  }
   const prerender = JSON.parse(
     await readFile(
       path.join(isolated, application, ".next/prerender-manifest.json"),
@@ -198,6 +222,8 @@ try {
   assert.equal(prerender.routes["/api/articles"], undefined);
   assert.equal(prerender.routes["/api/articles/[slug]"], undefined);
   assert.equal(prerender.dynamicRoutes?.["/api/articles/[slug]"], undefined);
+  assert.equal(prerender.routes["/articles"], undefined);
+  assert.equal(prerender.dynamicRoutes?.["/articles/[slug]"], undefined);
   const home = await request("/");
   assert.equal(home.status, 200);
   assert.match(home.headers.get("content-type"), /text\/html/);
@@ -263,7 +289,7 @@ try {
     },
   );
   console.log(
-    `Isolated production smoke test passed: homepage, ${new Set(assets).size} JS/CSS assets, public assets when present, request-time health endpoint, uncached article API validation/unavailability, and both private SQL operator modes/dependencies (no database access).`,
+    `Isolated production smoke test passed: homepage, ${new Set(assets).size} JS/CSS assets, public assets when present, request-time health endpoint, uncached article API/page validation and unavailable states, and both private SQL operator modes/dependencies (no database access).`,
   );
 } catch (error) {
   console.error(output);

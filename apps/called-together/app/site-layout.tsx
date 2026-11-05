@@ -1,15 +1,8 @@
 import NextLink from "next/link";
 import { Box, Link } from "@mui/material";
-import { SiteFooter, SiteHeader, type SiteNavigationLink } from "@repo/ui";
+import { SiteFooter } from "@repo/ui";
+import { SiteNavigation } from "./site-navigation";
 import type { ReactNode } from "react";
-
-// Application routes and section names stay here, outside the shared UI package.
-const navigation: readonly SiteNavigationLink[] = [
-  { label: "Home", href: "/", active: true },
-  { label: "Explore Scripture", href: "/#explore-scripture" },
-  { label: "Practical Guidance", href: "/#practical-guidance" },
-  { label: "Their Stories", href: "/#their-stories" },
-];
 
 export function SiteLayout({ children }: { children: ReactNode }) {
   return (
@@ -28,12 +21,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
       >
         Skip to main content
       </Link>
-      <SiteHeader
-        brand="Called Together"
-        brandHref="/"
-        links={navigation}
-        LinkComponent={NextLink}
-      />
+      <SiteNavigation />
       <Box
         component="main"
         id="main-content"
