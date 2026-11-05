@@ -18,7 +18,7 @@ import {
   database,
   sqlFailureMessage,
 } from "./database.js";
-import { verifySql } from "../operators/verify-sql.js";
+import { verifySql, sqlVerificationMode } from "../operators/verify-sql.js";
 
 function poolFixture() {
   const query = vi.fn().mockResolvedValue({ recordset: [{ ok: 1 }] });
@@ -189,5 +189,48 @@ describe("private operator verification", () => {
     expect(
       sqlFailureMessage({ code: "secret", message: "secret" }),
     ).not.toContain("secret");
+  });
+});
+
+describe("public article SELECT operator", () => {
+  it.each([
+    { rows: [] },
+    { rows: [{ ArticleId: "DO NOT PRINT ARTICLE CONTENT" }] },
+  ])(
+    "accepts zero or one view row without logging content",
+    async ({ rows }) => {
+      const { query, pool } = poolFixture();
+      query.mockResolvedValue({ recordset: rows });
+      const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+      expect(await verifySql(createDatabase(), "public-articles")).toBe(0);
+      expect(query.mock.calls[0]![0]).toContain("SELECT TOP (1)");
+      expect(query.mock.calls[0]![0]).toContain("FROM dbo.PublicArticles");
+      expect(query.mock.calls[0]![0]).not.toMatch(/SELECT\s+\*/);
+      expect(pool.close).toHaveBeenCalledTimes(1);
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        "PublicArticles SELECT verification succeeded (zero rows is valid).",
+      );
+    },
+  );
+  it("sanitizes permission errors and closes the pool", async () => {
+    const { query, pool } = poolFixture();
+    query.mockRejectedValue({
+      code: "EREQUEST",
+      message: "SELECT DENIED SECRET TOKEN",
+    });
+    const error = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    expect(await verifySql(createDatabase(), "public-articles")).toBe(1);
+    expect(pool.close).toHaveBeenCalledTimes(1);
+    expect(error.mock.calls.flat().join(" ")).not.toContain("SECRET");
+  });
+  it("requires the exact supported option", () => {
+    expect(sqlVerificationMode([])).toBe("connection");
+    expect(sqlVerificationMode(["--public-articles"])).toBe("public-articles");
+    expect(() =>
+      sqlVerificationMode(["--public-articles", "--force"]),
+    ).toThrow();
+    expect(() => sqlVerificationMode(["--unknown"])).toThrow();
   });
 });

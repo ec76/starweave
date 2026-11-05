@@ -13,7 +13,8 @@
     "test": "vitest run",
     "db:status": "npm run build:sql && node --conditions=react-server --env-file-if-exists=.env.local build/sql/operators/migrate.js --status",
     "db:migrate": "npm run build:sql && node --conditions=react-server --env-file-if-exists=.env.local build/sql/operators/migrate.js",
-    "db:prepare-verification": "npm run build:sql && node build/sql/operators/prepare-editorial-verification.js"
+    "db:prepare-verification": "npm run build:sql && node build/sql/operators/prepare-editorial-verification.js",
+    "verify:public-articles": "npm run verify:sql -- --public-articles"
   },
   "dependencies": {
     "@azure/identity": "^4.14.0",

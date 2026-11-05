@@ -160,6 +160,8 @@ inside the copy, and starts the generated server with a clean environment,
 JavaScript and CSS (including response bytes), optional public assets, and repeated
 `GET /api/health` responses. Health returns only `{"status":"ok"}` with `no-store`;
 the route is forced dynamic and the verifier checks it is not prerendered.
+It also checks uncached article API validation and generic 503 responses with no
+SQL settings, and verifies both SQL operator modes fail safely before connecting.
 The verifier stops the process and deletes its temporary directory on success or
 failure. It does not rely on the checkout's `node_modules`. It is an HTTP smoke
 test, not a browser hydration or visual test.
@@ -232,11 +234,13 @@ startup settings, or public readiness work. These require a live GitHub run on
 
 ## Called Together: private Azure SQL connectivity
 
-SQL access lives only in `apps/called-together/server/database.ts`, marked
+SQL connectivity lives in `apps/called-together/server/database.ts`, marked
 `server-only`. Import it only from server code running in the Node.js runtime,
-never Client Components or Edge code. No route currently uses SQL: the homepage
-and `/api/health` remain independent of the database. Importing the module or
-building the app does not read SQL settings, authenticate, or open a connection.
+never Client Components or Edge code. The anonymous article APIs query only
+`dbo.PublicArticles` through the server read model; the homepage and `/api/health`
+remain independent of SQL. See the
+[article API guide](apps/called-together/database/published-articles.md). Importing
+the module or building the app does not read SQL settings, authenticate, or open a connection.
 CI requires no SQL settings, Azure credentials, or database access.
 
 On first use, the module reads `SQL_SERVER` and `SQL_DATABASE` from the server
@@ -256,8 +260,8 @@ Connection and query timeouts are 15 and 10 seconds, pool acquisition/creation
 timeouts are 20 seconds, and cancellation/destruction timeouts are 5 seconds.
 Concurrent callers share initialization; failed initialization closes and clears
 the failed pool so a later call can retry. The holder survives development module
-reloads. No SQL queries, schema migrations, tables, or additional database grants
-are added to request handlers.
+reloads. Article handlers call the server read model only at request time. No
+schema migrations, table creation or database grants run in request handlers.
 
 ### Editorial schema and manual migrations
 
