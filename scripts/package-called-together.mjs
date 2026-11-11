@@ -18,7 +18,16 @@ await access(path.join(source, ".next/static"));
 const sqlEntry = path.join(source, "build/sql/operators/verify-sql.js");
 await access(sqlEntry);
 // This private command is not reachable from a Next route, so trace it explicitly.
-const sqlTrace = await nodeFileTrace([sqlEntry], {
+const operatorEntries = [
+  "verify-sql",
+  "migrate",
+  "bootstrap-admin",
+  "verify-auth-sql",
+  "notification-delivery",
+  "recover-pending",
+  "prepare-auth-verification",
+].map((name) => path.join(source, "build/sql/operators/" + name + ".js"));
+const sqlTrace = await nodeFileTrace(operatorEntries, {
   base: repository,
   processCwd: source,
   // NFT selects import/require per module; forcing both can trace the wrong
@@ -62,6 +71,10 @@ if (publicExists)
     path.join(source, "public"),
     path.join(runtimeApp, "public"),
   );
+await copyRuntime(
+  path.join(source, "database/migrations"),
+  path.join(runtimeApp, "database/migrations"),
+);
 await auditArtifact(artifact);
 await access(path.join(artifact, entryPoint));
 await access(path.join(runtimeApp, "build/sql/operators/verify-sql.js"));

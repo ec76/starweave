@@ -123,8 +123,9 @@ try {
     output = (output + data).slice(-12000);
   });
   const base = `http://127.0.0.1:${port}`;
-  async function request(url) {
+  async function request(url, options = {}) {
     return fetch(new URL(url, base), {
+      ...options,
       signal: AbortSignal.any([interruption.signal, AbortSignal.timeout(5000)]),
       redirect: "error",
     });
@@ -208,6 +209,55 @@ try {
       "Invalid article page URLs must return a real 404",
     );
   }
+  // Auth configuration is intentionally absent. Public routes must remain live,
+  // while private data stays inaccessible without contacting an email provider or SQL.
+  const adminSession = await request("/api/admin/session");
+  assert.equal(adminSession.status, 401);
+  assert.match(adminSession.headers.get("cache-control"), /no-store/);
+  assert.deepEqual(await adminSession.json(), {
+    error: "Authentication required.",
+  });
+  const csrf = await request("/api/auth/csrf");
+  assert.equal(csrf.status, 503);
+  assert.deepEqual(await csrf.json(), {
+    error: "Admin authentication is unavailable.",
+  });
+  for (const route of [
+    "/api/auth/sign-up/email",
+    "/api/auth/email-otp/send-verification-otp",
+    "/api/auth/sign-in/email-otp",
+    "/api/auth/email-otp/reset-password",
+    "/api/auth/request-password-reset",
+    "/api/auth/callback",
+  ]) {
+    assert.equal((await request(route)).status, 404);
+    assert.equal(
+      (
+        await request(route, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            email: "fictional@example.invalid",
+            password: "Fictional payload only",
+          }),
+        })
+      ).status,
+      404,
+    );
+  }
+  for (const route of [
+    "/admin",
+    "/admin/login",
+    "/admin/setup",
+    "/admin/reset",
+  ]) {
+    const response = await request(route);
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("cache-control"), /no-store/);
+    const html = await response.text();
+    assert(html.includes("Admin sign-in is temporarily unavailable."));
+    assert.match(html, /name="robots" content="noindex, nofollow"/);
+  }
   const prerender = JSON.parse(
     await readFile(
       path.join(isolated, application, ".next/prerender-manifest.json"),
@@ -224,6 +274,8 @@ try {
   assert.equal(prerender.dynamicRoutes?.["/api/articles/[slug]"], undefined);
   assert.equal(prerender.routes["/articles"], undefined);
   assert.equal(prerender.dynamicRoutes?.["/articles/[slug]"], undefined);
+  assert.equal(prerender.routes["/admin"], undefined);
+  assert.equal(prerender.routes["/admin/login"], undefined);
   const home = await request("/");
   assert.equal(home.status, 200);
   assert.match(home.headers.get("content-type"), /text\/html/);
@@ -289,7 +341,7 @@ try {
     },
   );
   console.log(
-    `Isolated production smoke test passed: homepage, ${new Set(assets).size} JS/CSS assets, public assets when present, request-time health endpoint, uncached article API/page validation and unavailable states, and both private SQL operator modes/dependencies (no database access).`,
+    `Isolated production smoke test passed: homepage, ${new Set(assets).size} JS/CSS assets, public assets when present, request-time health endpoint, uncached article API/page validation and unavailable states, both private SQL operator modes/dependencies, and fail-closed email authentication without credentials (no database or email-provider access).`,
   );
 } catch (error) {
   console.error(output);
