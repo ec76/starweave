@@ -1,0 +1,43 @@
+# Store detected text canonically as LF and check it out as LF on every OS.
+# This matches .prettierrc.json and overrides core.autocrlf for this repository.
+* text=auto eol=lf
+
+# Extension patterns are case-independent even on case-sensitive checkouts.
+# Shell and PowerShell scripts remain portable text. Windows command scripts
+# use CRLF in the working tree; their canonical Git blobs still use LF.
+*.[sS][hH] text eol=lf
+*.[pP][sS]1 text eol=lf
+*.[pP][sS][mM]1 text eol=lf
+*.[pP][sS][dD]1 text eol=lf
+*.[bB][aA][tT] text eol=crlf
+*.[cC][mM][dD] text eol=crlf
+
+# SVG is XML source, not a binary image.
+*.[sS][vV][gG] text eol=lf
+
+# Preserve binary assets byte-for-byte; never perform newline conversion.
+# The binary macro disables text conversion, textual diffs, and text merges.
+*.[pP][nN][gG] binary
+*.[jJ][pP][gG] binary
+*.[jJ][pP][eE][gG] binary
+*.[gG][iI][fF] binary
+*.[wW][eE][bB][pP] binary
+*.[aA][vV][iI][fF] binary
+*.[iI][cC][oO] binary
+*.[bB][mM][pP] binary
+*.[sS][vV][gG][zZ] binary
+*.[wW][oO][fF][fF] binary
+*.[wW][oO][fF][fF]2 binary
+*.[tT][tT][fF] binary
+*.[oO][tT][fF] binary
+*.[eE][oO][tT] binary
+*.[pP][dD][fF] binary
+*.[zZ][iI][pP] binary
+*.[gG][zZ] binary
+*.[tT][gG][zZ] binary
+*.7[zZ] binary
+*.[rR][aA][rR] binary
+*.[wW][aA][sS][mM] binary
+*.[eE][xX][eE] binary
+*.[dD][lL][lL] binary
+*.[pP][dD][bB] binary
