@@ -40,6 +40,7 @@ export const errorTypes = [
   "AggregateError",
   "SqlConfigurationError",
   "AdminConfigurationError",
+  "EmailDeliveryError",
   "CredentialUnavailableError",
   "AuthenticationError",
   "AggregateAuthenticationError",
@@ -48,6 +49,7 @@ export const errorTypes = [
   "TimeoutError",
 ];
 export const errorClassifications: Record<string, string> = {
+  EmailDeliveryError: "email_delivery_unavailable",
   TypeError: "type_error",
   ReferenceError: "reference_error",
   RangeError: "range_error",

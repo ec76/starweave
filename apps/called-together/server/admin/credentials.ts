@@ -1,7 +1,7 @@
 import "server-only";
 import { sql, type Kysely } from "kysely";
 import { createAuthWithDatabase, getAuthDatabase } from "./auth.ts";
-import { developmentDelivery, type EmailDelivery } from "./delivery.ts";
+import { configuredDelivery, type EmailDelivery } from "./delivery.ts";
 import { authStage } from "./diagnostics.ts";
 import { authTransaction } from "./transaction.ts";
 
@@ -31,7 +31,7 @@ export async function credentialOperation(
   input: CredentialInput,
   request: Request,
   db: Kysely<Record<string, never>> = getAuthDatabase(),
-  delivery: EmailDelivery = developmentDelivery,
+  delivery: EmailDelivery = configuredDelivery,
 ): Promise<Response> {
   return authTransaction(db, async (transaction) => {
     // One shared lock serializes activation/reset with administrative changes.

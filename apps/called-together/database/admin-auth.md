@@ -1,5 +1,15 @@
 # Password accounts and activity
 
+## Resend implementation (not deployed verification)
+
+Server-only Resend delivery is now available as an explicitly selected alternative
+using the existing Mailpit interface, templates and notification outbox. See
+[exact local/App Service setup and owner retest](../docs/email-delivery.md).
+No real email or SQL was used for this implementation. Production email delivery
+and deployed authentication enablement remain pending owner configuration and
+verification. Both deployed enablement gates default closed. Historical statements
+below describe the implementation and evidence at the time recorded.
+
 ## Owner verification update — recorded November 12, 2026
 
 The owner confirmed the following in the existing `ct_password_auth_test`:
@@ -604,7 +614,7 @@ checks, not these SQL steps.
    ```
 
    The first is dry-run. No startup bootstrap, default account, public recovery
-   bypass, production email or external provisioning exists.
+   bypass or external provisioning exists. Resend configuration/verification is separate.
 
 ### Only account never activates
 
@@ -633,7 +643,9 @@ not SQL transaction/concurrency proof. Owner verification above must establish
 real SQL schema compatibility, least-privilege execution, atomic audit writes,
 concurrency, and Mailpit delivery. None is claimed owner-verified for 0006/0007.
 
-Deployed email delivery remains unselected. `adminConfig` rejects production and
-App Service environments; deployed authentication remains closed. This change
-does not select/provision email, change Azure/Entra resources or grants, or
-publish/deploy. Public articles/health remain anonymous and independent of auth.
+Deployed delivery remains unconfigured and unverified. Mailpit is refused in
+production/App Service. Resend requires explicit provider configuration and both
+`ADMIN_AUTH_ENABLED=1` and `ADMIN_AUTH_OWNER_VERIFIED=1` outside local development;
+neither gate is enabled by this implementation. No Azure/Entra resources, grants
+or deployment are changed. Public articles/health remain anonymous and independent
+of auth. See [the email guide](../docs/email-delivery.md) before any enablement.

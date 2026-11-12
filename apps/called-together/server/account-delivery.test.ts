@@ -2,7 +2,7 @@ import { beforeEach, afterEach, it, expect, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 vi.mock("./database.ts", () => ({ database: { getPool: vi.fn() } }));
 import sql from "mssql";
-import { developmentDelivery } from "./admin/delivery.ts";
+import { configuredDelivery } from "./admin/delivery.ts";
 import { deliverAccountNotifications } from "./admin/notifications.ts";
 import { database } from "./database.ts";
 import { withAuthDiagnostics } from "./admin/diagnostics.ts";
@@ -25,10 +25,10 @@ it("delivers to loopback Mailpit, keeps the creation link credential-free, and n
     fetch = vi.fn(async () => ({ ok: true }));
   vi.stubGlobal("fetch", fetch);
   await withAuthDiagnostics(async () => {
-    await developmentDelivery.accountCreated({
+    await configuredDelivery.accountCreated({
       email: "fixture@example.invalid",
     });
-    await developmentDelivery.sendCode({
+    await configuredDelivery.sendCode({
       email: "fixture@example.invalid",
       purpose: "setup",
       code: "12345678",
@@ -52,7 +52,7 @@ it("refuses deployed delivery before fetch", async () => {
   vi.stubGlobal("fetch", fetch);
   vi.stubEnv("NODE_ENV", "production");
   await expect(
-    developmentDelivery.accountCreated({ email: "fixture@example.invalid" }),
+    configuredDelivery.accountCreated({ email: "fixture@example.invalid" }),
   ).rejects.toThrow();
   expect(fetch).not.toHaveBeenCalled();
 });
