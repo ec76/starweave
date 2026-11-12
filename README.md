@@ -405,6 +405,29 @@ change. Follow up when a supported Azure Identity release permits patched MSAL,
 then rerun dependency/audit inspection, SQL tests, builds, packaging, and isolated
 artifact verification. Do not suppress the existing audit finding as resolved.
 
+### MSAL reassessment for admin authentication (2026-11-05)
+
+This supersedes the earlier "no compatible parent update" result above. The
+registry now supplies Azure Identity 4.14.1, whose declared MSAL Node range is
+`^7.1.0`. The lockfile now resolves MSAL Node 7.2.0 through both SQL SDK paths,
+without a major-version override or prerelease parent. The earlier affected
+6.0.1 installation has been removed; the advisory's patched boundary is 7.1.0.
+SQL continues using the same direct managed-identity/Azure CLI credential paths.
+
+Entra user sign-in is superseded by Administrator-created password accounts using
+Better Auth, email-code setup/recovery, additive roles and immediately revocable sessions. Azure
+managed identity for SQL and GitHub OIDC deployment are retained. See
+[admin authentication architecture/setup](apps/called-together/database/admin-auth.md)
+for library/security evidence, operator bootstrap, immutable migrations,
+development-only email preview, runtime permissions and verification results.
+On November 11, 2026 the owner reported migrations 0001?0007 and targeted/full
+application HTTP/SQL/Mailpit verification passed in `ct_password_auth_test`;
+fixtures and append-only audit remain for review. Production authentication and
+least-privilege runtime access remain unverified. No deployment-time migrations.
+Deployed email delivery is not selected, so deployed authentication fails closed.
+Public pages/API/health remain anonymous; builds and isolated artifacts require
+no authentication credentials.
+
 ## Current Azure resources for apps/web
 
 The current web application deploys to Azure Static Web Apps Free. These existing

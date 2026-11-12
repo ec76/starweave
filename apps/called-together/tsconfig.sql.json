@@ -3,6 +3,7 @@
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "build/sql",
+    "rewriteRelativeImportExtensions": true,
     "types": ["node"],
     "declaration": false,
     "declarationMap": false
@@ -11,6 +12,11 @@
     "server/database.ts",
     "operators/verify-sql.ts",
     "operators/migrate.ts",
-    "operators/prepare-editorial-verification.ts"
+    "operators/bootstrap-admin.ts",
+    "operators/verify-auth-sql.ts",
+    "operators/prepare-auth-verification.ts",
+    "operators/prepare-editorial-verification.ts",
+    "operators/notification-delivery.ts",
+    "operators/recover-pending.ts"
   ]
 }

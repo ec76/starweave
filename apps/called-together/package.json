@@ -14,10 +14,15 @@
     "db:status": "npm run build:sql && node --conditions=react-server --env-file-if-exists=.env.local build/sql/operators/migrate.js --status",
     "db:migrate": "npm run build:sql && node --conditions=react-server --env-file-if-exists=.env.local build/sql/operators/migrate.js",
     "db:prepare-verification": "npm run build:sql && node build/sql/operators/prepare-editorial-verification.js",
-    "verify:public-articles": "npm run verify:sql -- --public-articles"
+    "verify:public-articles": "npm run verify:sql -- --public-articles",
+    "auth:bootstrap": "npm run build:sql && node --conditions=react-server --env-file-if-exists=.env.local build/sql/operators/bootstrap-admin.js",
+    "db:prepare-auth-verification": "npm run build:sql && node build/sql/operators/prepare-auth-verification.js",
+    "auth:verify-sql": "npm run build:sql && node --conditions=react-server --env-file-if-exists=.env.local build/sql/operators/verify-auth-sql.js",
+    "auth:notify": "npm run build:sql && node --conditions=react-server --env-file-if-exists=.env.local build/sql/operators/notification-delivery.js",
+    "auth:recover-pending": "npm run build:sql && node --conditions=react-server --env-file-if-exists=.env.local build/sql/operators/recover-pending.js"
   },
   "dependencies": {
-    "@azure/identity": "^4.14.0",
+    "@azure/identity": "4.14.1",
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/server": "^11.11.0",
@@ -25,11 +30,16 @@
     "@mui/material": "^9.5.0",
     "@mui/material-nextjs": "^9.5.0",
     "@repo/ui": "*",
+    "better-auth": "1.7.18",
+    "jose": "6.2.15",
+    "kysely": "0.29.8",
     "mssql": "^12.7.13",
     "next": "16.4.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "tarn": "3.0.2",
+    "tedious": "20.3.8"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",

@@ -64,8 +64,13 @@ describe("migration files and history", () => {
     expect(files.map((file) => file.filename)).toEqual([
       "0001_editorial_schema.sql",
       "0002_public_articles.sql",
+      "0003_email_accounts.sql",
+      "0004_email_account_operations.sql",
+      "0005_verification_identifier_capacity.sql",
+      "0006_password_accounts_and_activity.sql",
+      "0007_password_account_operations.sql",
     ]);
-    expect(new Set(files.map((file) => file.checksum)).size).toBe(2);
+    expect(new Set(files.map((file) => file.checksum)).size).toBe(files.length);
   });
 });
 describe("migration execution boundaries", () => {

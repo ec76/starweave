@@ -270,3 +270,21 @@ did not execute those checks; populated detail and the new HTML pages remain
 unverified live. Follow the
 [local, deployment and live verification steps](published-articles.md). An empty
 development database should return HTTP 200 with an empty list, not an error.
+
+## Administrator-created password accounts
+
+See [account setup, password authentication and activity](admin-auth.md). New
+migrations 0006/0007 adapt credential constraints, invalidate superseded sessions,
+add setup/recovery separation, activation, notification outbox and immutable
+business audit with a restricted Administrator activity view. On November 11,
+2026 the owner reported all 0001–0007 applied to `ct_password_auth_test`, targeted
+authenticated API/page verification passed, and full actual application
+HTTP/SQL/Mailpit verification passed. Fixtures and append-only audit remain for
+review. All seven applied migration sources/checksums are preserved. The coding
+agent does not connect or apply migrations. Production authentication and
+least-privilege runtime access remain unverified. Runtime permission changes
+are owner-reviewed, object-scoped templates, not automatic grants.
+
+Managed identity for SQL and GitHub OIDC are retained. No deployment performs
+migrations. Deployed email delivery remains unimplemented and deployed
+authentication stays closed.
