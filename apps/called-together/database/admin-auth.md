@@ -377,13 +377,17 @@ options. Its secure prefix makes the effective custom name
 custom name. Only presence booleans are logged; issuance and authentication are
 unchanged.
 
-## Recovery after committed 0006 and failed 0007
+## Historical recovery after committed 0006 and failed 0007
 
-The owner confirmed 0006 committed on 2026-11-11 at 19:56:18.972 and 0007 is
-absent. Preserve 0001–0006, including the corrected 0006, unchanged. The older
-version-5 inspection below no longer applies to this database.
+This section records the earlier version-6 baseline, not the current database
+state. The owner subsequently confirmed all seven migrations applied. Do not run
+this baseline inspection or replay its recovery against that initialized target.
 
-Unapplied 0007 now explicitly collates all seven text projections in both
+At this failure, the owner confirmed 0006 committed on 2026-11-11 at
+19:56:18.972 and 0007 was absent. The older version-5 inspection below did not
+apply to that version-6 baseline. All seven sources are now immutable applied history.
+
+Before its first successful application, 0007 was corrected to collate all seven text projections in both
 `AuthListActivity` UNION ALL branches to `Latin1_General_100_BIN2`, including
 typed NULLs for aggregate account IDs and role. Authorization is unchanged.
 
@@ -409,8 +413,11 @@ The coding agent did not connect to SQL or execute migrations.
 
 ## Historical recovery after the failed 0006 collation attempt
 
-The owner confirmed 0006/0007 have not succeeded in any database. The failed
+This section records the still earlier version-5 baseline. At that time the
+owner confirmed 0006/0007 had not succeeded in any database. The failed
 `ct_password_auth_test` attempt retained exactly the original history 1–5.
+The later successful application supersedes this baseline; do not rerun this
+recovery or edit applied migrations in the current database.
 Owner metadata inspection passed all schema-restoration checks: original
 constraint/procedures present and unchanged; new column, index, tables, triggers
 and procedures absent. The old **NoOpenTransaction** check evaluated live state
@@ -419,12 +426,13 @@ does not establish an existing transaction; rerun the corrected inspection below
 
 The exact conflict was `accountId = userId` in `CK_AuthAccounts_Credentials`.
 0003 gives `userId` the binary identity collation but leaves `accountId` on the
-database default. Corrected, still-unapplied 0006 now explicitly compares
+database default. Before its first successful application, 0006 was corrected to compare
 `accountId COLLATE Latin1_General_100_BIN2 = userId`; no column types, password
 requirements or applied migrations were changed. Its new canonical checksum is
 `15755292dfa4e247e176d4201d45e7a9003ba1f6f6f75e7ac1e4df7ff0baba2a`.
-0007 remains unchanged, checksum
-`008327ec58c96ab32f3d1dae787d8570ecc7cd2d3bd33b138976e9e2d4cfca02`.
+The later 0007 UNION correction superseded its earlier unapplied source. Use
+only the final applied checksums in the owner record above; never substitute
+historical source checksums into database history.
 No 0008 was added. The generated batch was regenerated from source, not patched
 by changing recorded checksums in the database.
 
@@ -483,20 +491,25 @@ Owner-run recovery, without removing objects or changing history:
    procedure, line and batch-start line, and the corresponding SQL statement.
    The error numbers alone do not identify the failing constraint or batch.
 
-5. Recheck `@@TRANCOUNT=0`, `XACT_STATE()=0`, history 1–7, the new 0006 checksum
-   above, and the unchanged 0007 checksum. The pre-apply baseline script is not a
+5. The recovery required transaction count/state 0/0 and verified migration
+   history. The final applied 0001–0007 checksums are now pinned in the owner
+   record above, including the later 0007 correction. The pre-apply baseline script is not a
    post-apply success test: its checks intentionally expect 6/7 objects absent.
-   Continue the staged setup below only after the owner verifies success.
+   This archived recovery is not an instruction to replay initial setup against
+   the already initialized database.
 
 The coding agent neither connected to SQL nor ended a transaction, applied a
 migration, changed permissions, or deleted files/data during this recovery.
 
-## Exact staged owner-run setup and verification
+## Initial setup reference — not a continuation procedure
 
-Use a **new disposable** `ct_password_auth_test`, authorized operator identity,
-Node 24, npm 11.19.1 and local Mailpit bound to loopback (no relay/real email).
-Do not run bootstrap on the previous disposable database containing accounts.
-The coding agent runs only offline/build/isolated checks, not these SQL steps.
+This reference applies only to a separately authorized, already-selected empty
+account store. The existing `ct_password_auth_test` is initialized: do not create
+or reset a database, rerun bootstrap, or replay these steps as authentication
+cleanup. Use the verification records and existing-account continuation above.
+Initial setup requires an authorized operator, Node 24, npm 11.19.1 and loopback
+Mailpit (no relay/real email). The coding agent runs only offline/build/isolated
+checks, not these SQL steps.
 
 1. Set local environment, preserving the SQL server selected by the owner:
 
@@ -512,8 +525,10 @@ The coding agent runs only offline/build/isolated checks, not these SQL steps.
    The assignment captures the secret without printing it. Use the same secret in
    the operator and development-server shells. Never put it in source or logs.
 
-2. Review/apply migrations **0006/0007** after checksum validation of **0001–0005**.
-   Stop the development server during cutover. All applied files remain unchanged.
+2. For a separately authorized initial target, review the complete migration
+   history **0001–0007**. The runner verifies/skips already applied versions;
+   all applied files remain unchanged. The current test database needs no migration
+   replay. Stop the development server during an authorized legacy cutover.
    Review any existing credentialless AuthAccounts rows before applying the new
    credential-only constraint; the migration will not silently delete or invent
    passwords for unsupported rows. From the repository root:
