@@ -1,13 +1,47 @@
 # Called Together email delivery
 
-Resend is implemented but **not configured or owner-verified in deployment**.
-Authentication stays closed by default. No migration, grant, bootstrap or resource
-change accompanies this implementation. Existing accounts and audit remain intact.
+Resend has owner-reported **targeted hosted development verification**, recorded
+below. Development authentication is enabled, with email delivery restricted to
+`eric.crews@gmail.com`. Custom-domain and broader-recipient rollout remain pending;
+this is not production readiness. Authentication still defaults closed without
+explicit configuration. This documentation change performs no migration, grant,
+bootstrap or resource change. Existing accounts and audit remain intact.
 The November 12 restricted-permission/historical-audit results in
 [the authentication guide](../database/admin-auth.md) remain separate evidence;
 they do not establish Resend delivery, a fresh full scenario or deployed readiness.
 
-## Owner verification record — November 12, 2026
+## Hosted development owner verification — November 12, 2026
+
+The owner reported the following for the hosted development App Service and
+`sqldb-called-together-dev`:
+
+- Migrations **0001–0007** are applied, with **zero pending**.
+- The App Service principal's permission apply/postcheck passed.
+- The account-created notification and setup code reached Gmail through Resend.
+- Hosted setup and password sign-in succeeded.
+- The session API returned `Administrator`.
+- After logout, the session API returned `Authentication required`.
+
+Development authentication is **enabled**, with email delivery restricted to
+`eric.crews@gmail.com`. The `onboarding@resend.dev` test-sender restriction still
+applies. A verified custom domain and broader-recipient rollout remain pending.
+
+Setup became available after an App Service restart. This records the observed
+sequence only: it does **not establish an underlying cause**, and the earlier
+temporary-unavailable response remains unexplained.
+
+These are owner-run observations, not checks performed by the coding agent. This
+was a **targeted hosted development check**, not full permission-denial probes,
+password-recovery or session-revocation testing, or multi-user verification.
+Successful permission application/postcheck is not evidence that every forbidden
+operation was exercised. Logout rejection does not establish password-reset
+revocation or other-session revocation. No production-readiness claim follows.
+The earlier disposable-database/local results below retain their separate scope.
+
+No SQL, Azure changes, email sends or fixture deletion were performed to document
+these results.
+
+## Local owner verification — November 12, 2026
 
 The owner reported the following targeted local results using the existing
 `ct_password_auth_test` database:
@@ -24,9 +58,10 @@ a fresh permission verification, or proof of deployed readiness. The earlier
 temporary-unavailable response remains **unexplained**; the later successful
 observations do not establish its cause or prove that it cannot recur.
 
-Deployed authentication remains disabled pending separate explicit configuration,
-owner authorization and deployed verification. No deployed enablement, SQL,
-permissions, fixtures or Azure resources were changed for this record.
+At the time of this local record, deployed authentication remained disabled.
+The subsequent hosted development result is recorded separately above. No
+deployed enablement, SQL, permissions, fixtures or Azure resources were changed
+by the coding agent for either record.
 
 ## Settings and server boundary
 
@@ -111,7 +146,12 @@ that restriction or make a new account eligible. A multi-account fresh full
 scenario needs a verified custom domain and approved recipients.
 [Official test-sender restriction](https://resend.com/docs/knowledge-base/403-error-resend-dev-domain).
 
-## Later App Service owner configuration (not performed by this change)
+## App Service configuration reference (not performed by this change)
+
+The hosted development result above supersedes the earlier unconfigured status
+for that environment only. The steps below remain prerequisites for any new
+environment or broader rollout; they are not instructions to repeat setup,
+bootstrap or migrations on the initialized development database.
 
 1. Keep `ADMIN_AUTH_ENABLED=0` and `ADMIN_AUTH_OWNER_VERIFIED=0` while staging
    configuration. Code merge/deployment alone must leave authentication closed.

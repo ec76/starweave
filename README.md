@@ -425,8 +425,11 @@ application HTTP/SQL/Mailpit verification passed in `ct_password_auth_test`;
 fixtures and append-only audit remain for review. Production authentication and
 least-privilege runtime access remain unverified. No deployment-time migrations.
 Resend is available as an explicitly selected server-only provider alongside local
-Mailpit. [Email configuration and owner verification](apps/called-together/docs/email-delivery.md)
-remain pending for deployment; both deployed authentication gates default closed.
+Mailpit. The owner reported targeted hosted development verification on November
+12: development authentication is enabled with delivery restricted to one approved
+recipient. See [email configuration and verification scope](apps/called-together/docs/email-delivery.md).
+Custom-domain and broader-recipient rollout remain pending; both authentication
+gates default closed without explicit configuration.
 Public pages/API/health remain anonymous; builds and isolated artifacts require
 no authentication credentials.
 

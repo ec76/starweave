@@ -1,6 +1,22 @@
 # Password accounts and activity
 
-## Resend implementation (not deployed verification)
+## Current hosted development status — November 12, 2026
+
+The owner reported targeted hosted development verification against
+`sqldb-called-together-dev`: migrations 0001–0007 applied with zero pending,
+App Service principal permission apply/postcheck passed, Resend account-created
+notification/setup-code receipt, successful setup/password sign-in, an
+Administrator session response, and authentication rejection after logout.
+Development authentication is enabled with email delivery restricted to
+`eric.crews@gmail.com`; custom-domain and broader-recipient rollout remain pending.
+
+This is not full hosted permission-denial, password-recovery/revocation or
+multi-user verification. Setup became available after restart, but its underlying
+cause is not proven. See [the full owner record](../docs/email-delivery.md).
+This documentation change performs no SQL, Azure changes, email sends or fixture
+deletion. Earlier local/disposable-database evidence below remains separate.
+
+## Resend implementation record (before hosted verification)
 
 Server-only Resend delivery is now available as an explicitly selected alternative
 using the existing Mailpit interface, templates and notification outbox. See
@@ -639,13 +655,16 @@ Offline coverage uses actual HTTP route exports with Better Auth's password/
 OTP primitives, SQL transaction/rollback driver fakes, installed MSSQL schema
 introspection, real mssql/Tedious parameter validation, policy/migration checks,
 and isolated production HTTP packaging smoke tests. In-memory library tests are
-not SQL transaction/concurrency proof. Owner verification above must establish
-real SQL schema compatibility, least-privilege execution, atomic audit writes,
-concurrency, and Mailpit delivery. None is claimed owner-verified for 0006/0007.
+not SQL transaction/concurrency proof. They do not extend the scope of the
+owner-reported local and hosted records above. Full hosted permission-denial,
+password-recovery/revocation and multi-user/concurrency verification remain
+outstanding; the targeted hosted result is not proof of those scenarios.
 
-Deployed delivery remains unconfigured and unverified. Mailpit is refused in
-production/App Service. Resend requires explicit provider configuration and both
+Hosted development has the targeted owner-reported results above; production and
+broader rollout remain unverified. Mailpit is refused in production/App Service.
+Resend requires explicit provider configuration and both
 `ADMIN_AUTH_ENABLED=1` and `ADMIN_AUTH_OWNER_VERIFIED=1` outside local development;
-neither gate is enabled by this implementation. No Azure/Entra resources, grants
-or deployment are changed. Public articles/health remain anonymous and independent
+these gates are enabled for development as reported by the owner, not by this
+documentation change. No Azure/Entra resources, grants or deployment are changed
+by this update. Public articles/health remain anonymous and independent
 of auth. See [the email guide](../docs/email-delivery.md) before any enablement.
