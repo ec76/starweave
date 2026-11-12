@@ -19,7 +19,7 @@ export function authVerification(database: string): Record<string, string> {
     "README.md":
       "Owner-run password account verification for " +
       selected +
-      ". Apply migrations with checksum validation, bootstrap once with the operator command, enable AUTH_INTEGRATION=1 locally, then run auth:verify-sql against the running HTTPS app and Mailpit. See database/admin-auth.md. For history 1?5 after failed 0006 use database/verification/password-migration-recovery-status.sql; for history 1?6 after failed 0007 use database/verification/password-migration-0007-recovery-status.sql as the owner; require every baseline check to pass in a clean autocommit connection. This generator makes no SQL connection and creates no accounts.\n",
+      ". Review migration history and account state before any owner action. Preserve applied migrations and checksums. For initialized targets, do not bootstrap or replay initial setup: use the existing-account continuation in database/admin-auth.md. Bootstrap is only for a separately authorized empty account store. AUTH_INTEGRATION=1 enables the local HTTP/Mailpit verifier, not deployed authentication. Historical recovery checks apply only to their exact baselines: history 1-5 after failed 0006 uses database/verification/password-migration-recovery-status.sql; history 1-6 after failed 0007 uses database/verification/password-migration-0007-recovery-status.sql. Neither recovery baseline applies to a database with 0001-0007 already applied. This generator makes no SQL connection and creates no accounts.\n",
   };
 }
 export function authApplySql(

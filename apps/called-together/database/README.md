@@ -282,7 +282,13 @@ authenticated API/page verification passed, and full actual application
 HTTP/SQL/Mailpit verification passed. Fixtures and append-only audit remain for
 review. All seven applied migration sources/checksums are preserved. The coding
 agent does not connect or apply migrations. Production authentication and
-least-privilege runtime access remain unverified. Runtime permission changes
+deployed least-privilege runtime access remain unverified. On November 12, the
+owner additionally confirmed restricted permission status, all 30 permission
+probes (transaction count/state 0/0), both-pool readiness identity matching, and
+all 15 historical audit types with logout checks in this disposable target.
+That continuation did not replay account management or establish a fresh full
+restricted-identity scenario. See the dated scopes in the authentication guide.
+Runtime permission changes
 are owner-reviewed, object-scoped templates, not automatic grants.
 
 Managed identity for SQL and GitHub OIDC are retained. No deployment performs
