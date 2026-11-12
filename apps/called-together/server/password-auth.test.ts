@@ -35,6 +35,7 @@ let codes: Map<string, string>,
   active: boolean,
   disabled: boolean,
   audit: string[];
+let adapterWrites: { model: string; operation: string; columns: string[] }[];
 function instance(purpose: "setup" | "reset" = "reset") {
   return betterAuth({
     ...authOptions(
@@ -58,7 +59,36 @@ function instance(purpose: "setup" | "reset" = "reset") {
       },
       purpose,
     ),
-    database: memoryAdapter(store),
+    database: (options: Parameters<ReturnType<typeof memoryAdapter>>[0]) =>
+      new Proxy(memoryAdapter(store)(options), {
+        get(target, key) {
+          const method = Reflect.get(target, key);
+          if (typeof method !== "function") return method;
+          return (...args: unknown[]) => {
+            if (
+              [
+                "create",
+                "update",
+                "updateMany",
+                "delete",
+                "deleteMany",
+              ].includes(String(key))
+            ) {
+              const input = args[0] as {
+                model: string;
+                data?: Record<string, unknown>;
+                update?: Record<string, unknown>;
+              };
+              adapterWrites.push({
+                model: input.model,
+                operation: String(key),
+                columns: Object.keys(input.data ?? input.update ?? {}),
+              });
+            }
+            return Reflect.apply(method, target, args);
+          };
+        },
+      }),
   });
 }
 async function form(
@@ -87,6 +117,7 @@ const cookies = (response: Response) =>
     .map((value) => value.split(";")[0])
     .join("; ");
 beforeEach(() => {
+  adapterWrites = [];
   vi.clearAllMocks();
   vi.stubEnv("NODE_ENV", "development");
   vi.stubEnv("AUTH_DEBUG", "");
@@ -181,6 +212,64 @@ async function activate() {
   );
 }
 describe("actual HTTP route forms with installed library password primitives", () => {
+  it("keeps installed library writes within the proposed runtime column permissions", async () => {
+    expect((await activate()).status).toBe(303);
+    const signedIn = await login(
+      await form("/api/auth/login", { email, password }),
+    );
+    expect(signedIn.status).toBe(303);
+    await resetCode(await form("/api/auth/reset/code", { email }));
+    expect(
+      (
+        await reset(
+          await form("/api/auth/reset", {
+            email,
+            code: codes.get("reset")!,
+            password: "Another valid password 123!",
+          }),
+        )
+      ).status,
+    ).toBe(303);
+    // Record field names only. Actual SQL grants still require the owner-run
+    // restricted-principal route test; this is installed-library behavior evidence.
+    const users = adapterWrites.filter(
+      (w) => w.model === "AuthUsers" || w.model === "user",
+    );
+    expect(users.length).toBeGreaterThan(0);
+    for (const write of users) {
+      expect(["update", "updateMany"]).toContain(write.operation);
+      expect(
+        write.columns.every((c) => ["emailVerified", "updatedAt"].includes(c)),
+      ).toBe(true);
+    }
+    for (const write of adapterWrites.filter(
+      (w) =>
+        ["AuthAccounts", "account"].includes(w.model) &&
+        ["update", "updateMany"].includes(w.operation),
+    ))
+      expect(
+        write.columns.every((c) => ["password", "updatedAt"].includes(c)),
+      ).toBe(true);
+    expect(
+      adapterWrites.some(
+        (w) =>
+          [
+            "AuthSessions",
+            "session",
+            "AuthVerifications",
+            "AuthSetupVerifications",
+            "verification",
+          ].includes(w.model) && ["update", "updateMany"].includes(w.operation),
+      ),
+    ).toBe(false);
+    expect(
+      adapterWrites.some(
+        (w) =>
+          ["AuthAccounts", "account"].includes(w.model) &&
+          ["delete", "deleteMany"].includes(w.operation),
+      ),
+    ).toBe(false);
+  });
   it("reads an expired session as unauthenticated without invoking a write hook outside the transaction", async () => {
     await activate();
     const response = await login(

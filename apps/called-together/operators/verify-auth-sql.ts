@@ -1,3 +1,7 @@
+import {
+  AuditAssertionFailure,
+  verifyAuditEvents,
+} from "./audit-verification.ts";
 import { request as httpsRequest } from "node:https";
 import { randomBytes, randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
@@ -47,6 +51,14 @@ export function authSqlArguments(
   )
     throw new Error("Use --database ct_explicit_auth_test [--run].");
   const database = disposableAuthDatabase(args[1]!);
+  if (
+    env.AUTH_VERIFY_AUDIT_ONLY === "1" &&
+    (env.AUTH_VERIFY_CONTINUE_ACTIVE !== "1" ||
+      env.AUTH_VERIFY_ADMIN_PAGE_ONLY === "1")
+  )
+    throw new Error(
+      "Audit continuation requires active-account mode and page-only mode disabled.",
+    );
   if (
     env.SQL_DATABASE !== database ||
     env.WEBSITE_INSTANCE_ID ||
@@ -222,6 +234,22 @@ export async function verifyAuthSql(database: string) {
   if (process.env.AUTH_VERIFY_ADMIN_PAGE_ONLY === "1") {
     console.log(
       "Authenticated session API and admin page verification passed; no account-management fixtures were created.",
+    );
+    return;
+  }
+  if (process.env.AUTH_VERIFY_AUDIT_ONLY === "1") {
+    stage = "audit_and_logout";
+    const audit = await verifyAuditEvents(admin.request);
+    console.log(
+      JSON.stringify({
+        event: "historical_audit_assertions_passed",
+        assertions: audit,
+      }),
+    );
+    check((await admin.post("/api/auth/logout", {})).status === 303);
+    check((await admin.request("/api/admin/session")).status === 401);
+    console.log(
+      "Historical audit coverage and logout continuation passed; no account-management scenario was replayed.",
     );
     return;
   }
@@ -415,27 +443,14 @@ export async function verifyAuthSql(database: string) {
   );
   check((await survivor.request("/api/admin/session")).status === 200);
   stage = "audit_and_logout";
-  const activity = (await survivor.request("/api/admin/activity")).json() as {
-    events: { eventType: string }[];
-  };
-  for (const type of [
-    "account_created",
-    "setup_completed",
-    "login",
-    "password_reset",
-    "sessions_revoked",
-    "role_granted",
-    "role_revoked",
-    "account_enabled",
-    "account_bootstrapped",
-    "logout",
-    "login_failed",
-    "reset_failed",
-    "code_requested",
-    "code_rejected",
-    "account_disabled",
-  ])
-    check(activity.events.some((event) => event.eventType === type));
+  const audit = await verifyAuditEvents(survivor.request, {
+    created: targetId!,
+    changed: disabledId,
+    survivor: survivingId,
+  });
+  console.log(
+    JSON.stringify({ event: "audit_assertions_passed", assertions: audit }),
+  );
   check((await survivor.post("/api/auth/logout", {})).status === 303);
   check((await survivor.request("/api/admin/session")).status === 401);
   console.log(
@@ -457,11 +472,21 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)
     console.error(
       JSON.stringify({
         event: "verification_failed",
+        ...(error instanceof AuditAssertionFailure
+          ? {
+              assertion: error.assertion,
+              expected: error.expected,
+              observed: error.observed,
+              pages: error.pages,
+            }
+          : {}),
         operation:
-          error instanceof RouteVerificationFailure &&
-          verificationStages.includes(error.operation)
-            ? error.operation
-            : "initialization_or_transport",
+          error instanceof AuditAssertionFailure
+            ? "audit_and_logout"
+            : error instanceof RouteVerificationFailure &&
+                verificationStages.includes(error.operation)
+              ? error.operation
+              : "initialization_or_transport",
       }),
     );
     console.error(

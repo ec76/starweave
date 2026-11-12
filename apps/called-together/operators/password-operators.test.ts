@@ -14,6 +14,28 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 describe("password migration and owner-only boundaries", () => {
+  it("refuses audit-only continuation that could replay first-time setup or skip the audit assertions", () => {
+    const env = {
+      SQL_DATABASE: "ct_password_auth_test",
+      AUTH_VERIFY_AUDIT_ONLY: "1",
+    };
+    expect(() =>
+      authSqlArguments(["--database", "ct_password_auth_test"], env),
+    ).toThrow();
+    expect(() =>
+      authSqlArguments(["--database", "ct_password_auth_test"], {
+        ...env,
+        AUTH_VERIFY_CONTINUE_ACTIVE: "1",
+        AUTH_VERIFY_ADMIN_PAGE_ONLY: "1",
+      }),
+    ).toThrow();
+    expect(
+      authSqlArguments(["--database", "ct_password_auth_test"], {
+        ...env,
+        AUTH_VERIFY_CONTINUE_ACTIVE: "1",
+      }).run,
+    ).toBe(false);
+  });
   it("reports the authenticated admin page substep when a 200 page renders unavailable", async () => {
     const request = vi.fn(async (path: string) => ({
       status: 200,

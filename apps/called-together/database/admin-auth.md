@@ -1,5 +1,29 @@
 # Password accounts and activity
 
+## Owner verification update — recorded November 12, 2026
+
+The owner confirmed the following in the existing `ct_password_auth_test`:
+
+- Restricted SQL permission status passed.
+- All **30 permission probes** passed, with final transaction count/state **0/0**.
+- Application readiness returned **ready=true** and **runtimeIdentityMatches=true**.
+- Audit-only continuation found all **15 required historical event types** and
+  passed logout checks.
+
+These are owner-run results, not SQL or application checks performed by the coding
+agent. They establish the reported restricted permission/probe results, readiness
+identity match and historical audit coverage/logout for this disposable target.
+The continuation **did not replay account-management scenarios**: no account
+creation, role/disable scenario or bootstrap was repeated. Historical event
+presence is not evidence of fresh event emission, a fresh full scenario, or a new
+full restricted-identity account-management pass. The earlier full scenario below
+remains a separate owner-reported result with its original scope.
+
+Fixtures and append-only audit remain for review. Applied migrations/checksums are
+unchanged. Deployed email delivery remains unimplemented and deployed
+authentication stays closed. Production authentication and deployed runtime
+least-privilege verification remain unverified. No deployment-time migrations.
+
 ## Owner verification record — November 11, 2026
 
 The owner reported that migrations **0001–0007** are applied to
@@ -8,7 +32,7 @@ passed, and the full actual application HTTP/SQL/Mailpit verification passed.
 Test fixtures and append-only audit remain in that disposable database for review.
 These are owner-reported results; the coding agent did not connect to SQL.
 
-Production/deployed authentication and least-privilege runtime access remain
+Production/deployed authentication and deployed least-privilege runtime access remain
 **unverified**. Deployed email delivery remains **unimplemented**. Configuration
 keeps deployed authentication closed; local Mailpit success does not establish
 production readiness. There are no deployment-time migrations. Applying SQL or
@@ -197,26 +221,78 @@ business transaction and prefer archive over deletion.
 
 ## Narrow runtime permissions (owner action only)
 
-Review `verification/password-runtime-permissions.sql`; replace its database/user
-placeholders and execute only as an explicit owner action. It refuses privileged
-runtime roles and supplies object-level rights only:
+The proposed grant template is narrowed to the traced installed-library and
+application operations. See the [permission matrix, trust boundary and restricted-
+identity verification procedure](verification/password-runtime-permissions.md).
+AuthUsers has SELECT and UPDATE(emailVerified, updatedAt), with no direct
+INSERT/DELETE or administrative/identity-field UPDATE. Credentials retain SELECT/
+INSERT and UPDATE(password, updatedAt); sessions and hashed verification tables
+retain SELECT/INSERT/DELETE without UPDATE. Notifications update only DeliveredAt.
+Role/invitation/audit/aggregate writes and operator-only procedures remain denied.
 
-- Library DML on AuthUsers, AuthSessions, AuthAccounts, AuthVerifications and
-  AuthSetupVerifications; SELECT on invitations and roles.
-- SELECT/UPDATE on safe-link notification outbox; no direct inserts/deletes.
-- EXECUTE on AuthManageAccount, AuthThrottle, AuthBeginSession,
-  AuthRecordSessionEvent, AuthCompletePassword, AuthSecurityEvent, AuthListActivity.
-- Direct SELECT and DML DENY on both audit histories, security aggregates and
-  throttle storage; direct role/invitation writes denied. Same-owner procedures
-  retain their ownership chains. Bootstrap and pending-recovery EXECUTE denied to runtime.
-
-The operator's bootstrap permission is separate. No principal, role membership,
-grant or Azure resource was changed by this implementation. Test these rights
-with the actual non-owner runtime identity, including direct audit modification
-and non-Administrator listing attempts. Inherited ALTER/CONTROL/ownership must
-also be absent. Existing public article SELECT remains unchanged.
+The template defaults to preflight only, applies atomically, checks effective
+object/column rights under the selected context, and preserves existing public
+article SELECT. It rejects excessive inherited authority rather than repairing
+other roles. Actual restricted-identity status/probes and both application pools
+must pass before claiming least privilege. Direct credential/session access and
+trusted procedure calls still give runtime substantial account authority; SQL
+permissions do not replace HTTP authentication/authorization. The coding agent
+did not run grants; owner-run results are recorded separately above.
 
 ## Continue after verifier failure at the admin page
+
+### Audit-only continuation after a successful activity response
+
+The old final `audit_and_logout` assertion read only the first unfiltered activity
+page and required all 15 event types on it. AuthListActivity orders by
+OccurredAt DESC, then Id ASC, returns 51 rows for a 50-row page/hasMore marker,
+and caps paging at 10,000. Append-only history from prior runs can push historical
+bootstrap/other required events beyond that page. HTTP 200 is not evidence that
+every required event is in the selected page. Old failures had no event assertion
+identifier, so the failing event cannot be recovered from those logs alone.
+
+The verifier now queries the authorized API separately for every required event
+type and follows hasMore where attribution requires later pages. Full-run
+business assertions use the created, changed or surviving account IDs from that
+run: target attribution for business events and actor+target for login/logout.
+An actor-only match must not satisfy an expected target event. Bootstrap is a
+historical global assertion; anonymous security aggregates have no account
+attribution and are visible only within the procedure's existing seven-day
+window. There is no new date filter or direct audit-table access.
+Freshly created account IDs isolate their events from older runs. An existing
+changed/surviving account can already have matching history: these are minimum-
+presence assertions, not exact per-operation emission counts.
+
+Failures emit only fixed identifiers such as `audit_event_account_bootstrapped`,
+expected minimum 1, observed match count and pages inspected. Empty filtered
+results after exhaustion mean no matching event is visible in that API scope,
+not proof that a storage/emitter defect exists. HTTP/shape/filter failures,
+pagination overlap and exhausted paging limits have separate identifiers; they
+must not be reported as missing emission. Stop concurrent verification writers
+before offset-pagination checks. SQL's uniqueidentifier tie order is not compared
+using JavaScript string ordering. Business auditing and SQL permissions are unchanged.
+
+For the existing database/accounts, keep the app's restricted identity and local
+HTTPS/Mailpit configuration. Select a known existing enabled, activated
+Administrator in AUTH_VERIFY_ADMIN_EMAIL (the original one may now be disabled).
+In the verifier terminal:
+
+```powershell
+$env:AUTH_VERIFY_CONTINUE_ACTIVE = '1'
+$env:AUTH_VERIFY_AUDIT_ONLY = '1'
+Remove-Item Env:AUTH_VERIFY_ADMIN_PAGE_ONLY -ErrorAction SilentlyContinue
+npm.cmd run auth:verify-sql --workspace=called-together -- --database ct_password_auth_test --run
+```
+
+The normal reset/login replaces the lost in-memory verifier password and revokes
+that account's old sessions. Then this mode checks authenticated API/page access,
+all original historical event-type coverage, and final logout/401. It does not
+replay setup, account creation, role/disable operations or bootstrap. It reports
+`historical_audit_assertions_passed`; without retained prior-run account IDs, this
+mode cannot certify those events' prior-run attribution or claim a new full-run
+pass. Unset AUTH_VERIFY_AUDIT_ONLY and AUTH_VERIFY_CONTINUE_ACTIVE afterward.
+Keep fixtures/audit. If a type is absent, share only the sanitized assertion
+record; review scope/retention before changing emission or permissions.
 
 The Next.js runtime defect is established by
 `node apps/called-together/operators/verify-next-session-runtime.mjs --unexternalized`
