@@ -1,4 +1,5 @@
 import "server-only";
+import { emailConfig } from "./email-config.ts";
 export class AdminConfigurationError extends Error {
   constructor() {
     super("Admin authentication is unavailable.");
@@ -28,12 +29,18 @@ export function adminConfig(
       key.toString("base64url") !== secret
     )
       throw new Error();
+    const delivery = emailConfig(env);
+    const local =
+      env.NODE_ENV === "development" &&
+      !env.WEBSITE_INSTANCE_ID &&
+      !env.WEBSITE_SITE_NAME &&
+      ["localhost", "127.0.0.1"].includes(origin.hostname);
+    if (delivery.provider === "mailpit" && !local) throw new Error();
+    // Configuration alone must never open deployed authentication.
     if (
-      env.AUTH_EMAIL_DELIVERY !== "development-preview" ||
-      env.NODE_ENV !== "development" ||
-      env.WEBSITE_INSTANCE_ID ||
-      env.WEBSITE_SITE_NAME ||
-      !["localhost", "127.0.0.1"].includes(origin.hostname)
+      delivery.provider === "resend" &&
+      !local &&
+      (env.ADMIN_AUTH_ENABLED !== "1" || env.ADMIN_AUTH_OWNER_VERIFIED !== "1")
     )
       throw new Error();
     const sessionSeconds = Number(env.ADMIN_SESSION_SECONDS ?? "43200");

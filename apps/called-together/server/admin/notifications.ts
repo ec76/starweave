@@ -1,14 +1,14 @@
 import "server-only";
 import sql from "mssql";
 import { database } from "../database.ts";
-import { developmentDelivery, type EmailDelivery } from "./delivery.ts";
+import { configuredDelivery, type EmailDelivery } from "./delivery.ts";
 import { authStage } from "./diagnostics.ts";
 /** At-least-once safe-link notifications; no bearer credentials in this outbox. */
 export async function deliverAccountNotifications(
-  delivery: EmailDelivery = developmentDelivery,
+  delivery: EmailDelivery = configuredDelivery,
   email?: string,
 ) {
-  return authStage("mailpit_delivery", "account_notification", async () => {
+  return authStage("email_delivery", "account_notification", async () => {
     const pool = await database.getPool();
     const rows = await pool
       .request()
@@ -17,7 +17,10 @@ export async function deliverAccountNotifications(
         `SELECT TOP (5) n.UserId,u.email FROM dbo.AuthNotifications n JOIN dbo.AuthUsers u ON u.id=n.UserId WHERE n.DeliveredAt IS NULL AND u.disabled=0 AND (@Email IS NULL OR u.email=@Email) ORDER BY n.CreatedAt;`,
       );
     for (const row of rows.recordset) {
-      await delivery.accountCreated({ email: row.email });
+      await delivery.accountCreated({
+        email: row.email,
+        notificationId: row.UserId,
+      });
       await pool
         .request()
         .input("UserId", sql.NVarChar(36), row.UserId)

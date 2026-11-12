@@ -7,12 +7,14 @@ export async function run(args: readonly string[]) {
     throw new Error("Use [--run].");
   if (!args.length) {
     console.log(
-      "Dry-run: no SQL or email delivery. Add --run to retry five pending safe-link notifications locally.",
+      "Dry-run: no SQL or email delivery. Add --run to retry five pending safe-link notifications with the configured provider.",
     );
     return;
   }
   if (!configuredAdmin())
-    throw new Error("Only configured local development delivery is supported.");
+    throw new Error(
+      "Authentication and email delivery must be explicitly configured.",
+    );
   try {
     await deliverAccountNotifications();
     console.log("Pending safe-link notification batch completed.");

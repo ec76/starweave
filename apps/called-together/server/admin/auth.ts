@@ -7,7 +7,7 @@ import * as Tedious from "tedious";
 import * as Tarn from "tarn";
 import { connectionConfig } from "../database.ts";
 import { adminConfig } from "./config.ts";
-import { developmentDelivery, type EmailDelivery } from "./delivery.ts";
+import { configuredDelivery, type EmailDelivery } from "./delivery.ts";
 
 import { sessionCookieOptions } from "./session-cookie.ts";
 import { authDiagnostic } from "./diagnostics.ts";
@@ -32,7 +32,7 @@ export function authOptions(
     completePassword: async () => {
       throw new Error("Application transaction required.");
     },
-    delivery: developmentDelivery,
+    delivery: configuredDelivery,
   },
   purpose: "setup" | "reset" = "reset",
 ) {

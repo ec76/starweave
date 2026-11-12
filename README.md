@@ -424,7 +424,9 @@ On November 11, 2026 the owner reported migrations 0001?0007 and targeted/full
 application HTTP/SQL/Mailpit verification passed in `ct_password_auth_test`;
 fixtures and append-only audit remain for review. Production authentication and
 least-privilege runtime access remain unverified. No deployment-time migrations.
-Deployed email delivery is not selected, so deployed authentication fails closed.
+Resend is available as an explicitly selected server-only provider alongside local
+Mailpit. [Email configuration and owner verification](apps/called-together/docs/email-delivery.md)
+remain pending for deployment; both deployed authentication gates default closed.
 Public pages/API/health remain anonymous; builds and isolated artifacts require
 no authentication credentials.
 

@@ -162,9 +162,11 @@ numbers on the owner's server.
 1. **Code merge:** deployed authentication stays closed; there are no automatic
    migrations/grants/bootstrap at startup or in deployment. Merge alone does not
    enable authentication and is not authorized by this review.
-2. **Email provider:** implement and review deployed delivery, secret management,
-   failure/retry behavior and configuration. Current Mailpit transport is local
-   development only. Do not relax adminConfig's closed deployed gate speculatively.
+2. **Email provider:** Resend is implemented with mocked delivery coverage; owner
+   configuration and live receipt verification remain pending. Follow
+   [the email guide](../../docs/email-delivery.md) for secret management, allowlist,
+   retry limits and explicit deployed gates. Mailpit remains local only. Keep
+   deployed authentication closed until separately owner-verified/authorized.
 3. **Operator SQL:** owner reviews/applies required immutable migration history
    with a separate operator identity; bootstrap only for an explicitly reviewed
    empty account store. The already initialized test database needs neither.
