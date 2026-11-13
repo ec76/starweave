@@ -313,7 +313,11 @@ describe("actual HTTP route forms with installed library password primitives", (
     expect((await response.text()).includes("PRIVATE_SENTINEL")).toBe(false);
   });
   it("sets up once, stores a library hash, signs in with a durable cookie and logs out", async () => {
-    expect((await activate()).status).toBe(303);
+    const activated = await activate();
+    expect(activated.status).toBe(303);
+    expect(activated.headers.get("location")).toBe(
+      origin + "/admin/login?setup=complete",
+    );
     expect(active).toBe(true);
     expect(store.AuthAccounts?.length).toBe(1);
     const hash = store.AuthAccounts![0]!.password;

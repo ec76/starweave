@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { AuthActionForm, AccountManagement } from "./admin-views";
 import type { AccountSummary } from "../../domain/accounts";
+import { AccountOperationFeedback } from "./account-feedback";
 function useCsrf() {
   const [csrfToken, setToken] = useState(""),
     [error, setError] = useState(false);
@@ -49,6 +50,7 @@ export function AccountControls({
   const csrf = useCsrf();
   return (
     <>
+      <AccountOperationFeedback />
       <AuthActionForm action="logout" {...csrf} />
       <AccountManagement accounts={accounts} csrfToken={csrf.csrfToken} />
     </>
