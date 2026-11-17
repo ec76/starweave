@@ -1,4 +1,4 @@
-﻿import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import sql from "mssql";
 import { connectionConfig, sqlFailureMessage } from "../server/database.js";
 import {
@@ -28,13 +28,15 @@ export function migrationConfig(
 }
 export function migrationMode(
   args: readonly string[],
-): "status" | "dry-run" | "apply" {
+): "status" | "dry-run" | "apply" | "diagnose-connection" {
+  if (args.length === 1 && args[0] === "--diagnose-connection")
+    return "diagnose-connection";
   if (args.length === 0 || (args.length === 1 && args[0] === "--dry-run"))
     return "dry-run";
   if (args.length === 1 && args[0] === "--status") return "status";
   if (args.length === 1 && args[0] === "--apply") return "apply";
   throw new MigrationValidationError(
-    "Use no options, --dry-run, --status, or --apply alone.",
+    "Use no options, --dry-run, --status, --apply, or --diagnose-connection alone.",
   );
 }
 export function sqlMigrationStore(pool: sql.ConnectionPool): MigrationStore {
@@ -48,11 +50,53 @@ export function sqlMigrationStore(pool: sql.ConnectionPool): MigrationStore {
     },
   };
 }
+function safeDriverDiagnostics(error: unknown) {
+  const entries: Record<string, unknown>[] = [];
+  const queue: unknown[] = [error];
+  const seen = new Set<unknown>();
+  const clean = (value: string) =>
+    value
+      .replace(
+        /(password|token|secret|connection(?:string)?|account(?:id)?|user(?:id)?)\s*[=:]\s*[^\s;,]+/gi,
+        "$1=[REDACTED]",
+      )
+      .replace(
+        /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g,
+        "[REDACTED]",
+      )
+      .slice(0, 1000);
+  while (queue.length && entries.length < 16) {
+    const item = queue.shift();
+    if (!item || typeof item !== "object" || seen.has(item)) continue;
+    seen.add(item);
+    const row = item as Record<string, unknown>;
+    const diagnostic: Record<string, unknown> = {};
+    for (const key of ["code", "number", "state", "class"])
+      if (typeof row[key] === "string" || Number.isInteger(row[key]))
+        diagnostic[key] = row[key];
+    entries.push(diagnostic);
+    for (const key of ["cause", "originalError"])
+      if (row[key] && typeof row[key] === "object") queue.push(row[key]);
+    if (Array.isArray(row.precedingErrors)) {
+      diagnostic.precedingErrors = row.precedingErrors.map((value) => {
+        const p = value as Record<string, unknown>;
+        const result: Record<string, unknown> = {};
+        for (const key of ["code", "number", "state", "class"])
+          if (typeof p[key] === "string" || Number.isInteger(p[key]))
+            result[key] = p[key];
+        return result;
+      });
+      queue.push(...row.precedingErrors);
+    }
+  }
+  return entries;
+}
 export async function migrate(
   args: readonly string[] = process.argv.slice(2),
 ): Promise<number> {
   let pool: sql.ConnectionPool | undefined;
   let result = 0;
+  let stage = "configuration";
   try {
     const mode = migrationMode(args);
     const config = migrationConfig();
@@ -67,7 +111,23 @@ export async function migrate(
     pool.on("error", () => {
       poolFailed = true;
     });
+    stage = "identity acquisition and connection opening";
     await pool.connect();
+    stage = "exact database target guard";
+    const target = await pool
+      .request()
+      .query<{ name: string }>("SELECT DB_NAME() AS name");
+    if (target.recordset[0]?.name !== config.database)
+      throw new MigrationValidationError(
+        "Connected SQL database does not match the explicitly configured target.",
+      );
+    if (mode === "diagnose-connection") {
+      console.log(
+        "Connection diagnostic passed: exact target confirmed; no transaction or migration started.",
+      );
+      return 0;
+    }
+    stage = "migration history read";
     const pending = await runMigrations(
       sqlMigrationStore(pool),
       files,
@@ -84,12 +144,26 @@ export async function migrate(
         : `${pending.length} pending migration(s). No schema changes made. Use db:migrate:called-together -- --apply to apply.`,
     );
   } catch (error) {
+    const message =
+      error &&
+      typeof error === "object" &&
+      "message" in error &&
+      typeof error.message === "string"
+        ? error.message
+        : "";
+    const marker = message.match(
+      /MIGRATION (\d+) ([a-z0-9_]+\.sql) stage=([a-z_]+)\s+error=\d+: /i,
+    );
     console.error(
       error instanceof MigrationValidationError
         ? error.message
         : "Migration command failed. " +
             sqlFailureMessage(error) +
-            " Check status before retrying; a failed migration rolls back, earlier migrations may have committed. Driver diagnostics are not logged.",
+            " Stage=" +
+            (marker?.[3] ?? stage) +
+            (marker ? "; migration=" + marker[1] + "/" + marker[2] : "") +
+            "; diagnostics=" +
+            JSON.stringify(safeDriverDiagnostics(error)),
     );
     result = 1;
   } finally {

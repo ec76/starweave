@@ -1,4 +1,4 @@
-﻿import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   Pool: vi.fn(),
   load: vi.fn(),
@@ -18,11 +18,14 @@ vi.mock("./migrations.js", async (original) => ({
 import { migrate, migrationConfig, migrationMode } from "./migrate.js";
 import { historyQuery, migration } from "./migrations.js";
 const file = migration("0001_test.sql", "SELECT 1;");
-function fixture() {
+function fixture(database = "example-db") {
   const batch = vi.fn().mockResolvedValue({ recordset: [] });
   const pool = {
     connect: vi.fn().mockResolvedValue(undefined),
-    request: vi.fn(() => ({ batch })),
+    request: vi.fn(() => ({
+      batch,
+      query: vi.fn().mockResolvedValue({ recordset: [{ name: database }] }),
+    })),
     close: vi.fn().mockResolvedValue(undefined),
     on: vi.fn(),
   };
@@ -99,6 +102,13 @@ describe("private migration operator", () => {
     expect(batch).toHaveBeenCalledTimes(2);
     expect(pool.close).toHaveBeenCalledTimes(1);
   });
+  it("stops before migration history or SQL when the connected database differs", async () => {
+    const { pool, batch } = fixture("different-db");
+    expect(await migrate(["--apply"])).toBe(1);
+    expect(pool.request).toHaveBeenCalledTimes(1);
+    expect(batch).not.toHaveBeenCalled();
+    expect(pool.close).toHaveBeenCalledTimes(1);
+  });
   it("fails closed for unknown options or App Service without opening a pool", async () => {
     fixture();
     expect(await migrate(["--force"])).toBe(1);
@@ -109,28 +119,42 @@ describe("private migration operator", () => {
   });
   it("reports connection and batch failures without leaking driver data, retries or success logs", async () => {
     const { pool, batch } = fixture();
-    batch
-      .mockResolvedValueOnce({ recordset: [] })
-      .mockRejectedValueOnce(new Error("SECRET SQL AND TOKEN"));
+    batch.mockResolvedValueOnce({ recordset: [] }).mockRejectedValueOnce(
+      Object.assign(new Error("sensitive outer SQL text"), {
+        code: "EREQUEST",
+        number: 51050,
+        precedingErrors: [
+          Object.assign(new Error("sensitive nested SQL text"), {
+            number: 52050,
+            state: 1,
+            class: 16,
+          }),
+        ],
+      }),
+    );
     expect(await migrate(["--apply"])).toBe(1);
     expect(batch).toHaveBeenCalledTimes(2);
     expect(pool.close).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(console.error).mock.calls.flat().join(" ")).not.toContain(
-      "SECRET",
-    );
+    const emitted = JSON.stringify(vi.mocked(console.error).mock.calls);
+    expect(emitted).not.toContain("sensitive outer SQL text");
+    expect(emitted).not.toContain("sensitive nested SQL text");
+    expect(emitted).toContain('\\"number\\":52050');
     expect(vi.mocked(console.log).mock.calls.flat().join(" ")).not.toContain(
       "completed",
     );
-    pool.connect.mockRejectedValueOnce(new Error("SECRET"));
+    pool.connect.mockRejectedValueOnce(new Error("sensitive connection text"));
     expect(await migrate([])).toBe(1);
     expect(pool.close).toHaveBeenCalledTimes(2);
+    expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain(
+      "sensitive connection text",
+    );
   });
-  it("treats cleanup failure as a failed command", async () => {
+  it("treats cleanup failure as a failed command without emitting driver text", async () => {
     const { pool } = fixture();
-    pool.close.mockRejectedValue(new Error("SECRET"));
+    pool.close.mockRejectedValue(new Error("sensitive cleanup text"));
     expect(await migrate([])).toBe(1);
-    expect(vi.mocked(console.error).mock.calls.flat().join(" ")).not.toContain(
-      "SECRET",
+    expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain(
+      "sensitive cleanup text",
     );
   });
 });

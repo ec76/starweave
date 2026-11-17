@@ -100,6 +100,10 @@ BEGIN TRY
     UPDATE dbo.ArticleRevisions SET Status = 'approved', SubmittedByActorId = @actor, SubmittedAt = @now WHERE Id = @revision;
     INSERT dbo.ReviewDecisions (RevisionId, ReviewerActorId, Decision, ReviewComment)
         VALUES (@revision, @reviewer, 'approved', N'PRIVATE REVIEW COMMENT');
+    DECLARE @profileRevision uniqueidentifier = NEWID();
+    INSERT dbo.AuthorProfileRevisions(Id,AuthorId,RevisionNumber,DisplayName,SavedByActorId,SavedByName,Source)
+      VALUES(@profileRevision,@author,1,N'Fictional author',@actor,N'Fictional writer','save');
+    UPDATE dbo.Authors SET LatestProfileRevisionId=@profileRevision,ApprovedProfileRevisionId=@profileRevision WHERE Id=@author;
     UPDATE dbo.Articles SET PublishedRevisionId = @revision, FirstPublishedAt = @now, PublishedAt = @now WHERE Id = @article;
     IF (SELECT COUNT(*) FROM dbo.PublicArticles WHERE ArticleId = @article AND RevisionId = @revision AND Title = N'Fictional published title' AND AuthorDisplayName = N'Fictional author') <> 1
         THROW 52012, 'Approved selected revision not exposed correctly.', 1;
