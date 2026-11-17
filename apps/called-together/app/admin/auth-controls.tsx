@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { AuthActionForm, AccountManagement } from "./admin-views";
 import type { AccountSummary } from "../../domain/accounts";
 import { AccountOperationFeedback } from "./account-feedback";
-function useCsrf() {
+export function useCsrf() {
   const [csrfToken, setToken] = useState(""),
     [error, setError] = useState(false);
   useEffect(() => {

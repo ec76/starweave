@@ -128,7 +128,7 @@ describe("offline disposable SQL verification preparation", () => {
     );
     expect(
       scripts["05-rollback-after-prefix.sql"]!.match(
-        /IF ERROR_NUMBER\(\) <> 52050 THROW/g,
+        /IF ERROR_NUMBER\(\) <> 51998 THROW/g,
       ),
     ).toHaveLength(2);
     expect(scripts["05-rollback-after-prefix.sql"]).toContain(
@@ -136,7 +136,7 @@ describe("offline disposable SQL verification preparation", () => {
     );
     expect(
       scripts["06-bootstrap-rollback.sql"]!.match(
-        /IF ERROR_NUMBER\(\) <> 52050 THROW/g,
+        /IF ERROR_NUMBER\(\) <> 51998 THROW/g,
       ),
     ).toHaveLength(2);
     expect(scripts["06-bootstrap-rollback.sql"]).toContain("is_ms_shipped = 0");
@@ -151,5 +151,46 @@ describe("offline disposable SQL verification preparation", () => {
       "Use the same live SQL session",
     );
     expect(JSON.stringify(files)).toBe(original);
+  });
+  it("requires the wrapped synthetic failure diagnostic as well as its public error code", () => {
+    const scripts = verificationScripts(
+      [migration("0001_initial.sql", "SELECT 1;")],
+      "",
+      main,
+      bootstrap,
+    );
+    for (const [name, version] of [
+      ["05-rollback-after-prefix.sql", 2],
+      ["06-bootstrap-rollback.sql", 1],
+    ] as const) {
+      const source = scripts[name]!;
+      expect(source.match(/IF ERROR_NUMBER\(\) <> 51998 THROW;/g)).toHaveLength(
+        2,
+      );
+      expect(
+        source.match(
+          /IF ERROR_MESSAGE\(\) COLLATE Latin1_General_100_BIN2 <>/g,
+        ),
+      ).toHaveLength(2);
+      expect(source).toContain(
+        `MIGRATION ${version} ${String(version).padStart(4, "0")}_verification_failure.sql stage=execute error=52050: Deliberate disposable failure`,
+      );
+      expect(source).toContain("Expected migration failure did not occur.");
+      expect(source).toContain("Migration failure left a transaction open.");
+      expect(source).toContain(
+        "CONVERT(nvarchar(10), ERROR_NUMBER()) + N'': '' + ERROR_MESSAGE()",
+      );
+      expect(source).toContain("THROW 52102");
+      if (version === 2) {
+        expect(source).toContain(
+          "A rollback probe or later migration survived.",
+        );
+        expect(source).toContain(
+          "Existing migration history changed during verification.",
+        );
+      } else {
+        expect(source.match(/WHERE is_ms_shipped = 0/g)).toHaveLength(3);
+      }
+    }
   });
 });

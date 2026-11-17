@@ -33,6 +33,7 @@ export function redirect(url: URL | string) {
 export async function csrfForm(
   request: Request,
   config: AdminConfig,
+  maximumBytes = 8192,
 ): Promise<FormData | null> {
   if (
     request.method !== "POST" ||
@@ -61,7 +62,7 @@ export async function csrfForm(
       const next = await reader.read();
       if (next.done) break;
       size += next.value.byteLength;
-      if (size > 8192) {
+      if (size > maximumBytes) {
         await reader.cancel();
         return null;
       }

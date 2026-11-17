@@ -69,6 +69,7 @@ describe("migration files and history", () => {
       "0005_verification_identifier_capacity.sql",
       "0006_password_accounts_and_activity.sql",
       "0007_password_account_operations.sql",
+      "0008_author_profile_revisions.sql",
     ]);
     expect(new Set(files.map((file) => file.checksum)).size).toBe(files.length);
   });
@@ -127,5 +128,15 @@ describe("migration execution boundaries", () => {
       createApplyBatch([migration("0001_quotes.sql", "SELECT N'quoted';")]),
     ).toContain("SELECT N''quoted'';");
     expect(historyQuery).not.toMatch(/CREATE|INSERT|UPDATE|DELETE/);
+  });
+  it("uses a distinct migration error variable for every migration in one batch", () => {
+    const batch = createApplyBatch([first, second]);
+    const declarations = [
+      ...batch.matchAll(/DECLARE (@migrationError\d+) nvarchar\(2048\)/g),
+    ].map((match) => match[1]);
+    expect(declarations).toEqual(["@migrationError1", "@migrationError2"]);
+    expect(new Set(declarations).size).toBe(declarations.length);
+    expect(batch).toContain("THROW 51998, @migrationError1, 1;");
+    expect(batch).toContain("THROW 51998, @migrationError2, 1;");
   });
 });

@@ -7,7 +7,7 @@ import { authApplySql } from "./prepare-auth-verification.ts";
 describe("read-only recovery inspection for failed password migrations", () => {
   it("preserves all seven owner-applied migration checksums", async () => {
     const files = await loadMigrations("database/migrations");
-    expect(files.map((file) => file.checksum)).toEqual([
+    expect(files.slice(0, 7).map((file) => file.checksum)).toEqual([
       "6ababa871a4679153b99c7fbb918b915491fa859b0876a76513bb64ac6b86485",
       "b6b92838fa0c8d029690dde5d0de172dfe29f46ac8cd6a2e0d54d15dbc27216f",
       "2ae528aa634d1f0afd085c2e1c4b1be937a919e2dfb9c5a5e780cd6a9e829990",
@@ -64,7 +64,7 @@ describe("read-only recovery inspection for failed password migrations", () => {
     expect(source.sql).not.toMatch(/\baccountId\s*=\s*userId\b/);
     expect(
       pendingMigrations(files, files.slice(0, 5)).map((file) => file.version),
-    ).toEqual([6, 7]);
+    ).toEqual([6, 7, 8]);
     const batch = authApplySql("ct_password_auth_test", files);
     const executable = batch
       .slice(batch.indexOf("WHERE version = 6)"))

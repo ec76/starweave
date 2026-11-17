@@ -49,12 +49,17 @@ SET NOCOUNT ON;
 `;
 }
 const execute = (sql: string) => `EXEC sys.sp_executesql ${literal(sql)};\n`;
-function expectedFailure(sql: string, code: number): string {
+function expectedFailure(
+  sql: string,
+  code: number,
+  diagnostic?: string,
+): string {
   return `BEGIN TRY
     ${execute(sql)}
     THROW 52102, 'Expected migration failure did not occur.', 1;
 END TRY BEGIN CATCH
     IF ERROR_NUMBER() <> ${code} THROW;
+    ${diagnostic ? `IF ERROR_MESSAGE() COLLATE Latin1_General_100_BIN2 <> ${literal(diagnostic)} COLLATE Latin1_General_100_BIN2 THROW;` : ""}
 END CATCH;
 IF @@TRANCOUNT <> 0 THROW 52103, 'Migration failure left a transaction open.', 1;
 `;
@@ -144,10 +149,18 @@ PRINT 'Empty disposable target verified. No schema changed.';
     guard +
     baseline(files) +
     noProbes +
-    expectedFailure(createApplyBatch(failureFiles), 52050) +
+    expectedFailure(
+      createApplyBatch(failureFiles),
+      51998,
+      `MIGRATION ${next} ${failureFiles[next - 1]!.filename} stage=execute error=52050: Deliberate disposable failure`,
+    ) +
     noProbes +
     unchangedHistory() +
-    expectedFailure(createApplyBatch(failureFiles), 52050) +
+    expectedFailure(
+      createApplyBatch(failureFiles),
+      51998,
+      `MIGRATION ${next} ${failureFiles[next - 1]!.filename} stage=execute error=52050: Deliberate disposable failure`,
+    ) +
     noProbes +
     unchangedHistory() +
     "PRINT 'Later-migration rollback passed twice; earlier history preserved; later migration did not run.';\n";
@@ -164,9 +177,17 @@ PRINT 'Empty disposable target verified. No schema changed.';
   const bootstrap =
     databaseGuard(bootstrapDatabase) +
     emptyDatabase +
-    expectedFailure(createApplyBatch(bootstrapFiles), 52050) +
+    expectedFailure(
+      createApplyBatch(bootstrapFiles),
+      51998,
+      "MIGRATION 1 0001_verification_failure.sql stage=execute error=52050: Deliberate disposable failure",
+    ) +
     emptyDatabase +
-    expectedFailure(createApplyBatch(bootstrapFiles), 52050) +
+    expectedFailure(
+      createApplyBatch(bootstrapFiles),
+      51998,
+      "MIGRATION 1 0001_verification_failure.sql stage=execute error=52050: Deliberate disposable failure",
+    ) +
     emptyDatabase +
     "PRINT 'First-migration rollback passed twice; bootstrap history and all probe DDL are absent.';\n";
   return {
@@ -231,6 +252,54 @@ export async function prepareVerification(
       verificationScripts(files, fixture, database, bootstrapDatabase),
     ))
       await writeFile(path.join(output, filename), source, "utf8");
+    const profiles = await readFile(
+      path.join(app, "database/verification/profiles.integration.sql"),
+      "utf8",
+    );
+    await writeFile(
+      path.join(output, "10-profiles.sql"),
+      databaseGuard(database) +
+        `EXEC sys.sp_set_session_context @key=N'CalledTogetherVerificationDatabase', @value=${literal(database)};\n` +
+        profiles,
+      "utf8",
+    );
+    const capture = `
+IF OBJECT_ID('tempdb..#ProfileConcurrency') IS NOT NULL THROW 53430,'Use fresh verification connections.',1;
+SELECT p.Id AS ProfileId,p.LatestProfileRevisionId AS ExpectedRevisionId,
+ (SELECT COUNT(*) FROM dbo.AuthorProfileRevisions r WHERE r.AuthorId=p.Id) AS BeforeCount,
+ (SELECT TOP(1) s.id FROM dbo.AuthSessions s JOIN dbo.AuthUsers u ON u.id=s.userId
+  WHERE s.expiresAt>SYSUTCDATETIME() AND u.disabled=0 AND EXISTS(SELECT 1 FROM dbo.AuthRoleAssignments WHERE UserId=u.id AND Role='Writer')
+  AND EXISTS(SELECT 1 FROM dbo.AuthRoleAssignments WHERE UserId=u.id AND Role='Administrator')) AS SessionId
+INTO #ProfileConcurrency FROM dbo.Authors p WHERE p.ApprovedProfileRevisionId IS NOT NULL;
+IF (SELECT COUNT(*) FROM #ProfileConcurrency)<>1 OR EXISTS(SELECT 1 FROM #ProfileConcurrency WHERE SessionId IS NULL)
+ THROW 53430,'Run the profile fixture first in the dedicated disposable target.',1;
+SELECT ExpectedRevisionId,BeforeCount FROM #ProfileConcurrency;
+PRINT 'Capture this same token in the other connection before either save.';
+`;
+    const save = `
+IF OBJECT_ID('tempdb..#ProfileConcurrency') IS NULL THROW 53430,'Capture first in this connection.',1;
+DECLARE @session nvarchar(36),@profile uniqueidentifier,@expected uniqueidentifier;
+SELECT @session=SessionId,@profile=ProfileId,@expected=ExpectedRevisionId FROM #ProfileConcurrency;
+EXEC dbo.AuthorProfileOperation @SessionId=@session,@Action='save',@ProfileId=@profile,@ExpectedRevisionId=@expected,@DisplayName=N'Concurrent replacement';
+`;
+    const check = `
+IF OBJECT_ID('tempdb..#ProfileConcurrency') IS NULL THROW 53430,'Use the original capture connection.',1;
+IF EXISTS(SELECT 1 FROM #ProfileConcurrency c JOIN dbo.Authors p ON p.Id=c.ProfileId
+ WHERE p.LatestProfileRevisionId=c.ExpectedRevisionId OR (SELECT COUNT(*) FROM dbo.AuthorProfileRevisions r WHERE r.AuthorId=p.Id)<>c.BeforeCount+1)
+ THROW 53431,'Expected exactly one concurrent save.',1;
+SELECT p.LatestProfileRevisionId FROM dbo.Authors p JOIN #ProfileConcurrency c ON p.Id=c.ProfileId;
+PRINT 'Exactly one new snapshot retained; compare new head with the other connection.';
+`;
+    for (const [name, source] of Object.entries({
+      "11-profile-capture.sql": capture,
+      "12-profile-save.sql": save,
+      "13-profile-check.sql": check,
+    }))
+      await writeFile(
+        path.join(output, name),
+        databaseGuard(database) + source,
+        "utf8",
+      );
     console.log(`Prepared SQL only: ${output}`);
     console.log(
       `Main disposable database: ${database}; empty bootstrap-test database: ${bootstrapDatabase}.`,

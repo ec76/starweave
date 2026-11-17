@@ -119,10 +119,10 @@ describe("password migration and owner-only boundaries", () => {
   );
   it("validates all migration history without changing 0001-0005", async () => {
     const files = await loadMigrations("database/migrations");
-    expect(files.map((f) => f.version)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(files.map((f) => f.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
     expect(
       pendingMigrations(files, files.slice(0, 5)).map((f) => f.version),
-    ).toEqual([6, 7]);
+    ).toEqual([6, 7, 8]);
     const schema = files[5]!.sql,
       ops = files[6]!.sql;
     expect(schema).toContain("DROP CONSTRAINT CK_AuthAccounts_NoCredentials");

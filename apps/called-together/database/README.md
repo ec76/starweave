@@ -294,3 +294,9 @@ are owner-reviewed, object-scoped templates, not automatic grants.
 Managed identity for SQL and GitHub OIDC are retained. No deployment performs
 migrations. Deployed email delivery remains unimplemented and deployed
 authentication stays closed.
+
+# Author profile saves
+
+See [profile revisions](profile-revisions.md) for migration 0008, the private
+editor, approved attribution isolation, runtime permissions and guarded
+disposable verification. Applied migrations 0001–0007 are unchanged.

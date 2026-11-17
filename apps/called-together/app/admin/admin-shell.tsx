@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import type { AccountRole } from "../../domain/admin-auth";
 
-export type AdminSection = "dashboard" | "accounts" | "activity";
+export type AdminSection = "dashboard" | "accounts" | "activity" | "profiles";
 export function AdminShell({
   section,
   roles,
@@ -34,9 +34,20 @@ export function AdminShell({
       ? "Dashboard"
       : section === "accounts"
         ? "Accounts"
-        : "Activity";
+        : section === "profiles"
+          ? "Author profiles"
+          : "Activity";
   const links = [
     { section: "dashboard", label: "Dashboard", href: "/admin" },
+    ...(roles.includes("Writer")
+      ? [
+          {
+            section: "profiles",
+            label: "Author profiles",
+            href: "/admin/profiles",
+          },
+        ]
+      : []),
     ...(roles.includes("Administrator")
       ? [
           { section: "accounts", label: "Accounts", href: "/admin/accounts" },

@@ -43,6 +43,24 @@ editor or reconnecting client must not be assumed to preserve a SQL session.
 
 ## 1. Prepare scripts locally; no database access
 
+For direct repository-root operator invocation, explicitly select the exact
+server/database in the same PowerShell process before running the built runner:
+
+```powershell
+$env:SQL_SERVER = 'sql-called-together-dev-ec76.database.windows.net'
+$env:SQL_DATABASE = 'ct_editorial_migration_test'
+npm.cmd run build:sql --workspace=called-together
+node --conditions=react-server apps/called-together/build/sql/operators/migrate.js --status
+node --conditions=react-server apps/called-together/build/sql/operators/migrate.js --apply
+```
+
+The runner checks `DB_NAME()` against `SQL_DATABASE` immediately after opening
+the connection and before reading history or executing a transaction. For the
+bootstrap SQL script, use a separate client connection explicitly configured
+with `ct_bootstrap_migration_test`; the script also checks its own `DB_NAME()`
+guard before executing its fixture transaction. Never infer the SQL database
+from the current directory or rely on `.env.local` for disposable targets.
+
 Replace both example database names with the two approved existing targets if
 they differ. Keep these variables in one local PowerShell session:
 
@@ -264,11 +282,17 @@ covered by the offline unit tests; this script covers the locked SQL-side check.
 **Azure SQL, main target:** execute generated `05-rollback-after-prefix.sql`.
 
 Expected: `Later-migration rollback passed twice; earlier history preserved; later migration did not run.`
-It runs the actual batch with temporary **in-memory** versions 3/4: version 3
-creates a probe then deliberately throws 52050; version 4 would create another
+It runs the actual batch with temporary **in-memory** versions immediately after
+the prepared real migrations: the first creates a probe then deliberately throws
+52050; the next would create another
 probe. Both attempts must leave neither probe table, no extra history entries,
-no open transaction, and exactly the original committed versions 1/2 including
-their checksums/timestamps. Probe migrations never enter the source directory.
+no open transaction, and exactly the original committed migration history including
+their checksums/timestamps (versions 1–8 for the current source). Probe migrations
+never enter the source directory. Each attempt must receive the wrapper's public
+error 51998 and the exact diagnostic naming the synthetic migration, execution
+stage, original error 52050 and `Deliberate disposable failure` message. Unrelated
+51998 failures are rejected. History-validation error 51001 and lock error 51000
+remain unwrapped because they occur outside migration execution.
 
 ## 9. First-migration and history-bootstrap rollback
 
@@ -277,7 +301,8 @@ execute generated `06-bootstrap-rollback.sql`. This script's exact-name guard
 rejects the main database.
 
 Expected: `First-migration rollback passed twice; bootstrap history and all probe DDL are absent.`
-It fails a synthetic first migration with 52050 twice and asserts there are no
+It fails a synthetic first migration with 52050 twice, requires public error
+51998 with the exact wrapped synthetic diagnostic, and asserts there are no
 user objects afterward, including no `CalledTogetherMigrations` history table.
 There is no need to drop the real schema or reset the main database. Keep the
 second database empty; do not apply the real migrations there for this test.

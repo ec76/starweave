@@ -122,7 +122,13 @@ BEGIN TRY
         END;`
             : ""
         }
-        EXEC sys.sp_executesql ${literal(m.sql)};
+        BEGIN TRY
+            EXEC sys.sp_executesql ${literal(m.sql)};
+        END TRY
+        BEGIN CATCH
+            DECLARE @migrationError${m.version} nvarchar(2048) = N'MIGRATION ${m.version} ${m.filename} stage=execute error=' + CONVERT(nvarchar(10), ERROR_NUMBER()) + N': ' + ERROR_MESSAGE();
+            THROW 51998, @migrationError${m.version}, 1;
+        END CATCH;
         EXEC sys.sp_executesql N'INSERT dbo.CalledTogetherMigrations (Version, Filename, Checksum) VALUES (@v, @f, @c)', N'@v int, @f nvarchar(200), @c char(64)', @v=${m.version}, @f=${literal(m.filename)}, @c=${literal(m.checksum)};
         COMMIT TRANSACTION;
     END;

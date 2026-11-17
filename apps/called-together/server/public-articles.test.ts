@@ -35,6 +35,9 @@ const row = {
   ReviewerActorId: "PRIVATE REVIEWER",
   ReviewComment: "PRIVATE COMMENT",
   Issuer: "PRIVATE ISSUER",
+  LatestProfileRevisionId: "PRIVATE PENDING PROFILE",
+  PendingDisplayName: "PRIVATE UNAPPROVED NAME",
+  PendingBiography: "PRIVATE UNAPPROVED BIOGRAPHY",
 };
 const request = (query = "") =>
   new Request("https://fictional.invalid/api/articles" + query);
