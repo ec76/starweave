@@ -1,6 +1,7 @@
 ﻿import type { Metadata } from "next";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 export const metadata: Metadata = {
   title: "Admin | Called Together",
   robots: { index: false, follow: false },

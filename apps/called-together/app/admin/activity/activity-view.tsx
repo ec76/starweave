@@ -1,3 +1,5 @@
+import { AdminPageHeader } from "../admin-shell";
+import { ActivityTime } from "../activity-time";
 import { Stack, Typography, TextField, Button, Link, Box } from "@mui/material";
 import { activityTypes, type ActivityEvent } from "../../../domain/activity";
 export function ActivityView({
@@ -11,13 +13,10 @@ export function ActivityView({
 }) {
   return (
     <Stack spacing={3}>
-      <Typography component="h1" variant="h1">
-        Account and editorial activity
-      </Typography>
-      <Typography>
-        Security entries are hourly aggregates. Times are UTC. Editorial actions
-        appear when their services are implemented.
-      </Typography>
+      <AdminPageHeader
+        title="Activity"
+        description="Account and editorial activity. Security entries are hourly aggregates. Event times use your local timezone after loading; date filters remain UTC. Editorial actions appear when their services are implemented."
+      />
       <Stack component="form" method="get" spacing={2}>
         <TextField name="account" label="Account ID" />
         <TextField
@@ -61,8 +60,9 @@ export function ActivityView({
             key={event.id}
             sx={{ mb: 3, overflowWrap: "anywhere" }}
           >
-            <Typography>
-              {event.occurredAt} · {event.eventType} · {event.outcome}
+            <Typography component="div">
+              <ActivityTime instant={event.occurredAt} /> · {event.eventType} ·{" "}
+              {event.outcome}
             </Typography>
             <Typography>
               Actor: {event.actorKind} {event.actingAccountId ?? ""} · Target:{" "}

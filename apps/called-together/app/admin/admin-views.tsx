@@ -1,3 +1,5 @@
+import { AdminShell, AdminPageHeader } from "./admin-shell";
+import { DashboardView, type DashboardSummary } from "./dashboard-view";
 import {
   Box,
   Button,
@@ -127,40 +129,27 @@ export function AuthActionForm({
 export function AdminLanding({
   session,
   children,
+  summary,
 }: {
   session: AdminSession;
   children: React.ReactNode;
+  summary?: DashboardSummary;
 }) {
   return (
-    <Container sx={{ py: tokens.layout.section }}>
-      <Stack
-        spacing={tokens.layout.group}
-        sx={{ maxWidth: tokens.layout.reading }}
-      >
-        <Typography component="h1" variant="h1">
-          Admin
-        </Typography>
-        <Typography>Signed in as {session.identity.displayName}</Typography>
-        <Typography sx={{ overflowWrap: "anywhere" }}>
-          {session.email}
-        </Typography>
-        <Box>
-          <Typography component="h2" variant="h3">
-            Your roles
-          </Typography>
-          <Box component="ul">
-            {session.roles.map((role) => (
-              <li key={role}>{role}</li>
-            ))}
-          </Box>
-        </Box>
-        <Typography>
-          Administrator access does not grant Writer or Approver permissions.
-          Editorial tools are not available yet.
-        </Typography>
-        {children}
-      </Stack>
-    </Container>
+    <AdminShell section="dashboard" roles={session.roles} actions={children}>
+      <AdminPageHeader
+        title="Dashboard"
+        description={"Welcome, " + session.identity.displayName}
+      />
+      <Typography sx={{ mb: 3 }}>
+        Your roles: {session.roles.join(", ")}. Administrator access does not
+        grant Writer or Approver permissions.
+      </Typography>
+      <DashboardView
+        administrator={session.roles.includes("Administrator")}
+        summary={summary}
+      />
+    </AdminShell>
   );
 }
 export function AdminAccessDenied({
@@ -189,137 +178,181 @@ export function AdminAccessDenied({
 export function AccountManagement({
   accounts,
   csrfToken,
+  listDescription = "Up to 100 most recently created accounts are shown.",
 }: {
   accounts: readonly AccountSummary[];
   csrfToken: string;
+  listDescription?: string;
 }) {
   return (
     <Stack spacing={3} sx={{ mt: 4 }}>
       <Typography component="h2" variant="h3">
         Manage accounts
       </Typography>
-      <Typography>
-        Create an account with at least one role. A notification links to setup;
-        the user requests a code and sets their own password. Role changes
-        revoke existing sessions. Pending accounts do not count as active
-        administrators.
-      </Typography>
-      <Stack
-        component="form"
-        action="/api/admin/accounts"
-        method="post"
-        spacing={2}
+      <Box
+        component="details"
+        id="create-account"
+        sx={{
+          border: 1,
+          borderColor: "divider",
+          borderRadius: "12px",
+          p: { xs: 2, sm: 3 },
+        }}
       >
-        <input type="hidden" name="csrfToken" value={csrfToken} />
-        <input type="hidden" name="action" value="create" />
-        <TextField
-          name="name"
-          label="Display name"
-          required
-          slotProps={{ htmlInput: { maxLength: 200 } }}
-        />
-        <TextField
-          name="email"
-          label="Email address"
-          type="email"
-          required
-          slotProps={{ htmlInput: { maxLength: 254 } }}
-        />
-        <Box component="fieldset">
-          <Typography component="legend">Assign roles</Typography>
-          {["Writer", "Approver", "Administrator"].map((role) => (
-            <FormControlLabel
-              key={role}
-              control={<Checkbox name="roles" value={role} />}
-              label={role}
-            />
-          ))}
-        </Box>
-        <Button type="submit" variant="contained" disabled={!csrfToken}>
-          Create account
-        </Button>
-      </Stack>
-      <Typography>
-        Up to 100 most recently created accounts are shown.
-      </Typography>
-      {accounts.map((account) => (
-        <Stack
-          key={account.id}
-          spacing={2}
-          sx={{ borderTop: 1, borderColor: "divider", pt: 3 }}
+        <Typography
+          component="summary"
+          sx={{ cursor: "pointer", minHeight: 44 }}
         >
-          <Typography component="h3" variant="h3">
-            {account.name}
-          </Typography>
-          <Typography sx={{ overflowWrap: "anywhere" }}>
-            {account.email} · {account.disabled ? "Disabled" : "Enabled"} ·{" "}
-            {account.roles.join(", ") || "No roles"} ?{" "}
-            {account.activatedAt ? "Active" : "Pending setup"}
-          </Typography>
+          Create account
+        </Typography>
+        <Typography>
+          Create an account with at least one role. A notification links to
+          setup; the user requests a code and sets their own password. Role
+          changes revoke existing sessions. Pending accounts do not count as
+          active administrators.
+        </Typography>
+        <Stack
+          component="form"
+          action="/api/admin/accounts"
+          method="post"
+          spacing={2}
+        >
+          <input type="hidden" name="csrfToken" value={csrfToken} />
+          <input type="hidden" name="action" value="create" />
+          <TextField
+            name="name"
+            label="Display name"
+            required
+            slotProps={{ htmlInput: { maxLength: 200 } }}
+          />
+          <TextField
+            name="email"
+            label="Email address"
+            type="email"
+            required
+            slotProps={{ htmlInput: { maxLength: 254 } }}
+          />
+          <Box component="fieldset">
+            <Typography component="legend">Assign roles</Typography>
+            {["Writer", "Approver", "Administrator"].map((role) => (
+              <FormControlLabel
+                key={role}
+                control={<Checkbox name="roles" value={role} />}
+                label={role}
+              />
+            ))}
+          </Box>
+          <Button type="submit" variant="contained" disabled={!csrfToken}>
+            Create account
+          </Button>
+        </Stack>
+      </Box>
+      <Typography>{listDescription}</Typography>
+      <Box
+        component="ul"
+        aria-label="Matching accounts"
+        sx={{ listStyle: "none", p: 0, m: 0, display: "grid", gap: 3 }}
+      >
+        {accounts.map((account) => (
           <Stack
-            component="form"
-            action="/api/admin/accounts"
-            method="post"
+            component="li"
+            key={account.id}
             spacing={2}
+            sx={{
+              border: 1,
+              borderColor: "divider",
+              borderRadius: "12px",
+              p: { xs: 2, sm: 3 },
+              bgcolor: "background.paper",
+              minWidth: 0,
+            }}
           >
-            <input type="hidden" name="csrfToken" value={csrfToken} />
-            <input type="hidden" name="targetId" value={account.id} />
-            <TextField
-              select
-              name="role"
-              label="Role"
-              defaultValue="Writer"
-              slotProps={{ select: { native: true } }}
+            <Typography component="h3" variant="h3">
+              {account.name}
+            </Typography>
+            <Typography sx={{ overflowWrap: "anywhere" }}>
+              {account.email}
+            </Typography>
+            <Typography>
+              Status:{" "}
+              {account.disabled
+                ? "Disabled"
+                : account.activatedAt
+                  ? "Active"
+                  : "Pending setup"}
+            </Typography>
+            <Typography>
+              Roles: {account.roles.join(", ") || "No roles"}
+            </Typography>
+            <Stack
+              component="form"
+              action="/api/admin/accounts"
+              method="post"
+              spacing={2}
             >
-              <option value="Writer">Writer</option>
-              <option value="Approver">Approver</option>
-              <option value="Administrator">Administrator</option>
-            </TextField>
-            <Stack direction="row" useFlexGap sx={{ flexWrap: "wrap", gap: 2 }}>
-              <Button
-                type="submit"
-                name="action"
-                value="grant_role"
-                disabled={!csrfToken}
+              <input type="hidden" name="csrfToken" value={csrfToken} />
+              <input type="hidden" name="targetId" value={account.id} />
+              <TextField
+                select
+                name="role"
+                label="Role"
+                defaultValue="Writer"
+                slotProps={{ select: { native: true } }}
               >
-                Assign role
-              </Button>
-              <Button
-                type="submit"
-                name="action"
-                value="revoke_role"
-                disabled={!csrfToken}
+                <option value="Writer">Writer</option>
+                <option value="Approver">Approver</option>
+                <option value="Administrator">Administrator</option>
+              </TextField>
+              <Stack
+                direction="row"
+                useFlexGap
+                sx={{ flexWrap: "wrap", gap: 2 }}
               >
-                Revoke role
-              </Button>
-              <Button
-                type="submit"
-                name="action"
-                value="revoke_sessions"
-                disabled={!csrfToken}
-              >
-                Revoke sessions
-              </Button>
-              <Button
-                type="submit"
-                name="action"
-                value="enable"
-                disabled={!csrfToken}
-              >
-                Enable account
-              </Button>
-              <Button
-                type="submit"
-                name="action"
-                value="disable"
-                disabled={!csrfToken}
-              >
-                Disable account
-              </Button>
+                <Button
+                  type="submit"
+                  name="action"
+                  value="grant_role"
+                  disabled={!csrfToken}
+                >
+                  Assign role
+                </Button>
+                <Button
+                  type="submit"
+                  name="action"
+                  value="revoke_role"
+                  disabled={!csrfToken}
+                >
+                  Revoke role
+                </Button>
+                <Button
+                  type="submit"
+                  name="action"
+                  value="revoke_sessions"
+                  disabled={!csrfToken}
+                >
+                  Revoke sessions
+                </Button>
+                <Button
+                  type="submit"
+                  name="action"
+                  value="enable"
+                  disabled={!csrfToken}
+                >
+                  Enable account
+                </Button>
+                <Button
+                  type="submit"
+                  name="action"
+                  value="disable"
+                  disabled={!csrfToken}
+                >
+                  Disable account
+                </Button>
+              </Stack>
             </Stack>
           </Stack>
-        </Stack>
-      ))}
+        ))}
+      </Box>
     </Stack>
   );
 }

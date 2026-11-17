@@ -14,6 +14,7 @@ const verificationStages = [
   "administrator_password_login",
   "authenticated_session_api",
   "authenticated_admin_page",
+  "authenticated_account_search",
   "administrator_creation",
   "setup_password_login",
   "password_recovery_revocation",
@@ -28,7 +29,10 @@ class RouteVerificationFailure extends Error {
 export async function verifyAuthenticatedAdmin(
   request: (path: string) => Promise<{ status: number; text: string }>,
   setStage: (
-    stage: "authenticated_session_api" | "authenticated_admin_page",
+    stage:
+      | "authenticated_session_api"
+      | "authenticated_admin_page"
+      | "authenticated_account_search",
   ) => void,
 ) {
   setStage("authenticated_session_api");
@@ -36,8 +40,12 @@ export async function verifyAuthenticatedAdmin(
     throw new RouteVerificationFailure("authenticated_session_api");
   setStage("authenticated_admin_page");
   const page = await request("/admin");
-  if (page.status !== 200 || !page.text.includes("Manage accounts"))
+  if (page.status !== 200 || !page.text.includes("Find an account"))
     throw new RouteVerificationFailure("authenticated_admin_page");
+  setStage("authenticated_account_search");
+  const search = await request("/admin/accounts");
+  if (search.status !== 200 || !search.text.includes("Manage accounts"))
+    throw new RouteVerificationFailure("authenticated_account_search");
 }
 export function authSqlArguments(
   args: readonly string[],

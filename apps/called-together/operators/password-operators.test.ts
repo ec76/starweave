@@ -60,6 +60,34 @@ describe("password migration and owner-only boundaries", () => {
     expect(request).toHaveBeenCalledTimes(1);
   });
   it.each([false, true])(
+    "verifies the new account-search destination separately, unavailable=%s",
+    async (unavailable) => {
+      const request = vi.fn(async (path: string) => ({
+        status: 200,
+        text:
+          path === "/admin"
+            ? "Find an account"
+            : path === "/admin/accounts"
+              ? unavailable
+                ? "Account search is temporarily unavailable."
+                : "Manage accounts"
+              : "",
+      }));
+      const stage = vi.fn();
+      if (unavailable)
+        await expect(
+          verifyAuthenticatedAdmin(request, stage),
+        ).rejects.toMatchObject({ operation: "authenticated_account_search" });
+      else await verifyAuthenticatedAdmin(request, stage);
+      expect(request.mock.calls).toEqual([
+        ["/api/admin/session"],
+        ["/admin"],
+        ["/admin/accounts"],
+      ]);
+      expect(stage).toHaveBeenLastCalledWith("authenticated_account_search");
+    },
+  );
+  it.each([false, true])(
     "uses ordinary code verification for account continuation=%s",
     async (continuing) => {
       const post = vi.fn(async () => ({ location: "/admin" }));

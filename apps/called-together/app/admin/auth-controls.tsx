@@ -44,15 +44,25 @@ export function AuthControls({
 }
 export function AccountControls({
   accounts,
+  listDescription,
 }: {
   accounts: readonly AccountSummary[];
+  listDescription?: string;
 }) {
   const csrf = useCsrf();
   return (
     <>
       <AccountOperationFeedback />
-      <AuthActionForm action="logout" {...csrf} />
-      <AccountManagement accounts={accounts} csrfToken={csrf.csrfToken} />
+      {csrf.error && (
+        <p role="status">
+          Account controls are unavailable. Refresh to try again.
+        </p>
+      )}
+      <AccountManagement
+        accounts={accounts}
+        csrfToken={csrf.csrfToken}
+        listDescription={listDescription}
+      />
     </>
   );
 }

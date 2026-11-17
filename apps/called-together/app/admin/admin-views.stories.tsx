@@ -55,24 +55,26 @@ export const Unconfigured: Story = {
 export const Administrator: Story = {
   args: {
     session: { ...session, roles: ["Administrator"] },
-    children: (
-      <>
-        <AuthActionForm action="logout" csrfToken="" />
-        <AccountManagement
-          csrfToken=""
-          accounts={[
-            {
-              id: session.userId,
-              name: "Example invitee (fictional)",
-              email: "invitee@example.invalid",
-              disabled: false,
-              roles: ["Writer", "Approver"],
-            },
-          ]}
-        />
-      </>
-    ),
+    children: <AuthActionForm action="logout" csrfToken="" />,
+    summary: { counts: { active: 3, pending: 1, disabled: 0 }, events: [] },
   },
+};
+export const LegacyAccountManagement: Story = {
+  args: DualRole.args,
+  render: () => (
+    <AccountManagement
+      csrfToken=""
+      accounts={[
+        {
+          id: session.userId,
+          name: "Example invitee (fictional)",
+          email: "invitee@example.invalid",
+          disabled: false,
+          roles: ["Writer", "Approver"],
+        },
+      ]}
+    />
+  ),
 };
 export const PasswordSignIn: Story = {
   args: DualRole.args,

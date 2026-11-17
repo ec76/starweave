@@ -53,3 +53,20 @@ an explicitly selected disposable verification database. Local automated tests d
 not establish live SQL grants or actual inbox delivery. No new migration or
 permission change is required for this ticket, and no live SQL/email mutation was
 performed during implementation.
+
+## Owner-reported local verification, November 16, 2026
+
+The owner tested the expanded invitation and admin workspace checkout against
+`ct_password_auth_test` with local Mailpit. An Administrator created a fictional
+Writer/Approver account and its invitation arrived in Mailpit. The recipient
+completed setup and signed in; the session API returned exactly Writer and
+Approver. Both `/admin/accounts` and `/admin/activity` denied that account access.
+After sign-out, the session API returned Authentication required.
+
+This is a focused manual journey, not a fresh full SQL verifier run or production
+verification. Existing fixtures and audit remain. Before this journey the test
+database already contained two ready Administrators; the full verifier's
+single-ready-Administrator assumptions do not apply. Do not replay its disablement
+scenario on this state. The owner-only read-only lookup
+`database/verification/password-ready-administrators.sql` can identify existing
+eligible accounts without selecting credentials.

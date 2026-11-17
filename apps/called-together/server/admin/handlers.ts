@@ -248,7 +248,7 @@ export async function managePost(request: Request) {
           );
         }
       }
-      return redirect(new URL("/admin?" + outcome, config.origin));
+      return redirect(new URL("/admin/accounts?" + outcome, config.origin));
     } catch (error) {
       const status =
         error && typeof error === "object" && "status" in error
