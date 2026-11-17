@@ -1,14 +1,15 @@
 import { redirect } from "next/navigation";
-import { Link } from "@mui/material";
 import { adminConfig } from "../../server/admin/config";
 import { currentAdminSession } from "../../server/admin/access";
-import { accounts } from "../../server/admin/repository";
+import { accountCounts } from "../../server/admin/account-search";
+import { listActivity } from "../../server/admin/activity";
+import type { DashboardSummary } from "./dashboard-view";
 import {
   AdminLanding,
   AdminAccessDenied,
   AdminUnavailable,
 } from "./admin-views";
-import { AuthControls, AccountControls } from "./auth-controls";
+import { AuthControls } from "./auth-controls";
 import {
   authDiagnostic,
   authStage,
@@ -17,7 +18,8 @@ import {
 } from "../../server/admin/diagnostics";
 export default async function AdminPage() {
   return withAuthDiagnostics(async () => {
-    let session, summaries;
+    let session;
+    const summary: DashboardSummary = { counts: null, events: null };
     try {
       authStageSync("configuration", "admin_configuration", () =>
         adminConfig(),
@@ -25,8 +27,6 @@ export default async function AdminPage() {
       session = await authStage("session", "page_session", () =>
         currentAdminSession(),
       );
-      if (session?.roles.includes("Administrator"))
-        summaries = await accounts.list();
     } catch (error) {
       authDiagnostic("admin_page", "admin_page", "failed", error);
       return <AdminUnavailable />;
@@ -38,16 +38,23 @@ export default async function AdminPage() {
           <AuthControls action="logout" />
         </AdminAccessDenied>
       );
+    if (session.roles.includes("Administrator")) {
+      try {
+        summary.counts = await accountCounts(session);
+      } catch (error) {
+        authDiagnostic("admin_page", "admin_account_list", "failed", error);
+      }
+      try {
+        summary.events = (
+          await listActivity(session.id, { page: 1 })
+        ).events.slice(0, 3);
+      } catch (error) {
+        authDiagnostic("admin_page", "activity_list", "failed", error);
+      }
+    }
     return (
-      <AdminLanding session={session}>
-        {summaries ? (
-          <>
-            <Link href="/admin/activity">View activity</Link>
-            <AccountControls accounts={summaries} />
-          </>
-        ) : (
-          <AuthControls action="logout" />
-        )}
+      <AdminLanding session={session} summary={summary}>
+        <AuthControls action="logout" />
       </AdminLanding>
     );
   });

@@ -196,7 +196,8 @@ export function credentialHandler(
               config.origin,
             ),
           );
-        const destination = returnTo;
+        const destination =
+          action === "setup-finish" ? "/admin/login?setup=complete" : returnTo;
         const response = redirect(new URL(destination, config.origin));
         if (action === "login" || action === "logout")
           for (const cookie of result!.headers.getSetCookie())
@@ -229,12 +230,15 @@ export async function managePost(request: Request) {
       await authStage("query", "account_management", () =>
         accountService(accounts).manage(session, form),
       );
+      let outcome = "updated=1";
       if (form.get("action") === "create") {
+        outcome = "accountResult=invitation_pending";
         try {
-          await deliverAccountNotifications(
+          const sent = await deliverAccountNotifications(
             undefined,
             accountEmail(form.get("email")),
           );
+          if (sent > 0) outcome = "accountResult=invited";
         } catch (error) {
           authDiagnostic(
             "mailpit_delivery",
@@ -244,7 +248,7 @@ export async function managePost(request: Request) {
           );
         }
       }
-      return redirect(new URL("/admin?updated=1", config.origin));
+      return redirect(new URL("/admin/accounts?" + outcome, config.origin));
     } catch (error) {
       const status =
         error && typeof error === "object" && "status" in error

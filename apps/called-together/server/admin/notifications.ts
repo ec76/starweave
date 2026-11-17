@@ -28,5 +28,6 @@ export async function deliverAccountNotifications(
           "UPDATE dbo.AuthNotifications SET DeliveredAt=SYSUTCDATETIME() WHERE UserId=@UserId AND DeliveredAt IS NULL;",
         );
     }
+    return rows.recordset.length;
   });
 }

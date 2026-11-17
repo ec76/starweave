@@ -85,3 +85,29 @@ it("does not mark an outbox notification delivered on failure, preserving it for
   expect(query).toHaveBeenCalledOnce();
   expect(String(query.mock.calls[0]![0]).includes("UPDATE")).toBe(false);
 });
+
+it("confirms only notifications accepted by delivery and recorded in the outbox", async () => {
+  vi.stubEnv("AUTH_DEBUG", "");
+  const row = {
+    UserId: "11111111-1111-4111-8111-111111111111",
+    email: "fixture@example.invalid",
+  };
+  const query = vi
+    .spyOn(sql.Request.prototype, "query")
+    .mockResolvedValueOnce({ recordset: [row] } as never)
+    .mockResolvedValueOnce({ rowsAffected: [1] } as never);
+  vi.mocked(database.getPool).mockResolvedValue({
+    request: () => new sql.Request(),
+  } as sql.ConnectionPool);
+  const sent: string[] = [];
+  const delivery = {
+    sendCode: async () => {},
+    accountCreated: async ({ email }: { email: string }) => {
+      sent.push(email);
+    },
+  };
+  expect(await deliverAccountNotifications(delivery, row.email)).toBe(1);
+  expect(sent).toEqual(["fixture@example.invalid"]);
+  query.mockResolvedValueOnce({ recordset: [] } as never);
+  expect(await deliverAccountNotifications(delivery, row.email)).toBe(0);
+});

@@ -258,6 +258,40 @@ try {
     assert(html.includes("Admin sign-in is temporarily unavailable."));
     assert.match(html, /name="robots" content="noindex, nofollow"/);
   }
+  for (const route of ["/admin/accounts", "/admin/activity"]) {
+    const response = await request(route);
+    assert.match(response.headers.get("cache-control"), /no-store/);
+    let destination;
+    if (response.status === 307) {
+      destination = new URL(
+        response.headers.get("location"),
+        "https://internal.invalid",
+      );
+    } else {
+      // A loading boundary can flush 200 before Next emits its redirect meta tag.
+      // 200 alone is never evidence of authentication or a successful redirect.
+      assert.equal(response.status, 200);
+      const html = await response.text();
+      const refresh = html.match(
+        /<meta[^>]*http-equiv="refresh"[^>]*content="\d+;url=([^"]+)"/,
+      );
+      assert(
+        refresh,
+        "Anonymous protected page must emit an actual login redirect",
+      );
+      destination = new URL(
+        refresh[1].replaceAll("&amp;", "&"),
+        "https://internal.invalid",
+      );
+      assert.match(html, /name="robots" content="noindex, nofollow"/);
+      assert(
+        !html.includes("Find an account"),
+        "Anonymous page must not render the dashboard",
+      );
+    }
+    assert.equal(destination.pathname, "/admin/login");
+    assert.equal(destination.searchParams.get("returnTo"), route);
+  }
   const prerender = JSON.parse(
     await readFile(
       path.join(isolated, application, ".next/prerender-manifest.json"),
@@ -269,6 +303,7 @@ try {
     "Health endpoint must not be prerendered",
   );
 
+  assert.equal(prerender.routes["/admin/accounts"], undefined);
   assert.equal(prerender.routes["/api/articles"], undefined);
   assert.equal(prerender.routes["/api/articles/[slug]"], undefined);
   assert.equal(prerender.dynamicRoutes?.["/api/articles/[slug]"], undefined);

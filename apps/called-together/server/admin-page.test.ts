@@ -26,6 +26,13 @@ vi.mock("../app/admin/auth-controls", () => ({
   AuthControls: () => null,
   AccountControls: () => null,
 }));
+vi.mock("./admin/account-search", () => ({
+  accountCounts: vi.fn(async () => ({ active: 1, pending: 0, disabled: 0 })),
+}));
+vi.mock("./admin/activity", () => ({
+  listActivity: vi.fn(async () => ({ events: [], hasMore: false })),
+  securityEvent: vi.fn(),
+}));
 import AdminPage from "../app/admin/page";
 import {
   AdminLanding,
@@ -148,13 +155,8 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-describe("GET /admin actual session and account repository diagnostics", () => {
-  it.each([
-    "session_liveness",
-    "session_account_invitation",
-    "session_roles",
-    "admin_account_list",
-  ])(
+describe("GET /admin actual session repository diagnostics", () => {
+  it.each(["session_liveness", "session_account_invitation", "session_roles"])(
     "identifies %s SQL failure at the unavailable catch",
     async (operation) => {
       fail = operation;
@@ -177,40 +179,37 @@ describe("GET /admin actual session and account repository diagnostics", () => {
       expect(mocks.redirect).not.toHaveBeenCalled();
     },
   );
-  it.each([
-    "page_headers",
-    "session_lookup",
-    "mssql_pool",
-    "session_mapping",
-    "admin_account_mapping",
-  ])("separates %s from a SQL query failure", async (operation) => {
-    fail = operation;
-    if (operation === "page_headers")
-      mocks.headers.mockRejectedValueOnce(new TypeError(privateText));
-    if (operation === "session_lookup")
-      mocks.getSession.mockRejectedValueOnce(new TypeError(privateText));
-    expect((await AdminPage()).type).toBe(AdminUnavailable);
-    expect(events()).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ operation, outcome: "failed" }),
-      ]),
-    );
-    expect(events()).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          operation,
-          outcome: "failed",
-          reason:
-            operation === "mssql_pool"
-              ? "sql_authentication"
-              : operation === "admin_account_mapping"
-                ? "syntax_error"
-                : "type_error",
-        }),
-      ]),
-    );
-    expect(JSON.stringify(log.mock.calls)).not.toContain(privateText);
-  });
+  it.each(["page_headers", "session_lookup", "mssql_pool", "session_mapping"])(
+    "separates %s from a SQL query failure",
+    async (operation) => {
+      fail = operation;
+      if (operation === "page_headers")
+        mocks.headers.mockRejectedValueOnce(new TypeError(privateText));
+      if (operation === "session_lookup")
+        mocks.getSession.mockRejectedValueOnce(new TypeError(privateText));
+      expect((await AdminPage()).type).toBe(AdminUnavailable);
+      expect(events()).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ operation, outcome: "failed" }),
+        ]),
+      );
+      expect(events()).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            operation,
+            outcome: "failed",
+            reason:
+              operation === "mssql_pool"
+                ? "sql_authentication"
+                : operation === "admin_account_mapping"
+                  ? "syntax_error"
+                  : "type_error",
+          }),
+        ]),
+      );
+      expect(JSON.stringify(log.mock.calls)).not.toContain(privateText);
+    },
+  );
   it("rejects a non-string library session ID through the installed validator without coercion", async () => {
     mocks.getSession.mockResolvedValue({
       session: { id: { private: privateText } },
@@ -331,12 +330,12 @@ describe("GET /admin actual session and account repository diagnostics", () => {
           )
         ).status,
       ).toBe(200);
-      expect(validated).toBe(7);
-      expect(parent.release).toHaveBeenCalledTimes(7);
+      expect(validated).toBe(6);
+      expect(parent.release).toHaveBeenCalledTimes(6);
       expect(JSON.stringify(log.mock.calls)).not.toContain(privateText);
     },
   );
-  it("reaches the Administrator page only after library, SQL gate, roles and account list succeed", async () => {
+  it("reaches the Administrator page only after library, SQL gate and roles succeed", async () => {
     expect((await AdminPage()).type).toBe(AdminLanding);
     expect(mocks.getSession).toHaveBeenCalledWith({
       headers: expect.any(Headers),

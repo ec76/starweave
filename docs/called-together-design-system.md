@@ -63,6 +63,24 @@ a global reduction rule). No horizontal scrolling at 320px.
 
 ## Reference examples
 
+### Admin workspace
+
+The private workspace uses a 200px desktop navigation column from `md`; below
+`md`, navigation moves to a labelled MUI drawer with keyboard dismissal and focus
+restoration. This fixed column is a deliberate exception for short navigation
+labels; content always uses `minmax(0, 1fr)`. Preserve the 75rem theme container,
+gutters, typography and colors.
+
+Use a compact wrapping context/account/action bar, breadcrumbs, then one H1 and
+description/primary action. Spacing is 16/24px around the shell, 24/32px between
+columns, 24px between panels, and 16/24px within 12px-radius outlined panels.
+Forms use one column on mobile and 44px touch targets. Wrap names/addresses rather
+than adding a horizontally scrolling account table. Counts describe current
+states; no decorative charts. Existing controls stay inline without dead detail
+links. Storybook **Called Together / Admin workspace** defines review states.
+
+### Public pages
+
 The homepage hero uses a wider introduction (3:2 columns from md), 32px gap
 below md / 64px from md, and 24px panel padding / 32px from md. Its introduction
 uses the requested 18px article size. The panel consumes `palette.secondary.light`

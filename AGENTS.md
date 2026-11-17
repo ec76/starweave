@@ -38,3 +38,20 @@ static-export deployment configuration; an App Service migration is separate wor
   and source. Do not commit, push, or change Azure resources unless requested.
 
 - Called Together visual work follows [the design standards](docs/called-together-design-system.md); keep brand tokens and content in apps/called-together.
+
+## Agent skills
+
+### Issue tracker
+
+Track issues and specs in GitHub Issues for `ec76/starweave`.
+Read `docs/agents/issue-tracker.md` before tracker operations.
+
+### Triage labels
+
+Use the five default triage labels.
+Read `docs/agents/triage-labels.md` before triaging issues.
+
+### Domain docs
+
+Use multi-context domain documentation.
+Read `docs/agents/domain.md` before exploring domain concepts or decisions.

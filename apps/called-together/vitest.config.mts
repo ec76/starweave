@@ -8,6 +8,7 @@ export default defineConfig({
       "server/**/*.test.ts",
       "operators/**/*.test.ts",
       "domain/**/*.test.ts",
+      "app/admin/**/*.test.tsx",
     ],
   },
 });

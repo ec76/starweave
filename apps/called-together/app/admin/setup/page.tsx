@@ -22,13 +22,17 @@ export default async function Page({
         </Typography>
         {params.sent === "1" && (
           <Typography role="status">
-            If this account is eligible, a code has been sent. Check your email.
+            If your account is eligible and email is available, a code will
+            arrive. It expires in five minutes. If no code arrives, contact an
+            administrator.
           </Typography>
         )}
         {params.error === "1" && (
           <Typography role="status">
-            The request could not be completed. Check your details or request a
-            new code.
+            Setup could not be completed. Check your email address, password,
+            and code. Codes expire after five minutes and can only be used once.
+            Request a new code, or contact an administrator if your invitation
+            has expired.
           </Typography>
         )}
         <AuthControls action="setup" />

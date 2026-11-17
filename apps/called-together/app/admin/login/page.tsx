@@ -27,6 +27,12 @@ export default async function AdminLogin({
           Use the email address and password for your administrator-created
           account.
         </Typography>
+        {params.setup === "complete" && (
+          <Typography role="status">
+            Your account setup is complete. Sign in with your email address and
+            the password you just chose.
+          </Typography>
+        )}
         {params.error === "1" && (
           <Typography role="status">
             Sign-in could not be completed. Check your details or reset your

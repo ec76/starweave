@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { AuthActionForm, AccountManagement } from "./admin-views";
 import type { AccountSummary } from "../../domain/accounts";
+import { AccountOperationFeedback } from "./account-feedback";
 function useCsrf() {
   const [csrfToken, setToken] = useState(""),
     [error, setError] = useState(false);
@@ -43,14 +44,25 @@ export function AuthControls({
 }
 export function AccountControls({
   accounts,
+  listDescription,
 }: {
   accounts: readonly AccountSummary[];
+  listDescription?: string;
 }) {
   const csrf = useCsrf();
   return (
     <>
-      <AuthActionForm action="logout" {...csrf} />
-      <AccountManagement accounts={accounts} csrfToken={csrf.csrfToken} />
+      <AccountOperationFeedback />
+      {csrf.error && (
+        <p role="status">
+          Account controls are unavailable. Refresh to try again.
+        </p>
+      )}
+      <AccountManagement
+        accounts={accounts}
+        csrfToken={csrf.csrfToken}
+        listDescription={listDescription}
+      />
     </>
   );
 }

@@ -1,5 +1,16 @@
 # Password runtime permission review
 
+## Admin navigation/search phase
+
+The new Administrator-only account search and dashboard counts reuse existing
+SELECT rights on AuthUsers and AuthRoleAssignments. Search uses a parameterized,
+25-row page (one extra row detects more results); counts are server-side
+aggregates. Recent activity still uses AuthListActivity. No new object, migration,
+credential/audit read or broader grant is required. Existing account-management
+procedures and authorization remain unchanged. See
+[the workspace query boundary and owner retest](../../docs/admin-workspace.md).
+This offline implementation does not establish live principal permissions.
+
 Proposed permissions, not applied or SQL-engine verified by the coding agent.
 Use the existing `ct_password_auth_test` with its applied 0001–0007 history.
 The November 11 owner-reported route pass used the earlier identity/permissions;

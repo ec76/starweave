@@ -1,4 +1,3 @@
-import { Container } from "@mui/material";
 import { redirect, notFound } from "next/navigation";
 import { requireRoles, AdminAccessError } from "../../../domain/accounts";
 import { currentAdminSession } from "../../../server/admin/access";
@@ -7,7 +6,8 @@ import {
   authDiagnostic,
   withAuthDiagnostics,
 } from "../../../server/admin/diagnostics";
-import { tokens } from "../../design-tokens";
+import { AdminShell } from "../admin-shell";
+import { AuthControls } from "../auth-controls";
 import { AdminUnavailable, AdminAccessDenied } from "../admin-views";
 import { ActivityView } from "./activity-view";
 export default async function Page({
@@ -46,13 +46,18 @@ export default async function Page({
         return "/admin/activity?" + query;
       };
       return (
-        <Container sx={{ py: tokens.layout.section }}>
+        <AdminShell
+          accountName={session.identity.displayName}
+          section="activity"
+          roles={session.roles}
+          actions={<AuthControls action="logout" />}
+        >
           <ActivityView
             events={result.events}
             previous={filter.page > 1 ? href(filter.page - 1) : null}
             next={result.hasMore ? href(filter.page + 1) : null}
           />
-        </Container>
+        </AdminShell>
       );
     } catch (error) {
       authDiagnostic("admin_page", "activity_list", "failed", error);
