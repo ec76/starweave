@@ -3,6 +3,9 @@ import { fileURLToPath } from "node:url";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  experimental: {
+    agentUpgrade: "security",
+  },
   outputFileTracingRoot: fileURLToPath(new URL("../../", import.meta.url)),
   transpilePackages: ["@repo/ui"],
   // The development pool holder is shared across app-route/app-rsc bundles.
